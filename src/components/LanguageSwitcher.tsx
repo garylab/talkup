@@ -1,19 +1,18 @@
 'use client';
 
-import { Globe } from 'lucide-react';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { Locale, localeNames } from '@/i18n';
+import { Locale } from '@/i18n';
 
 interface LanguageSwitcherProps {
   locale: Locale;
-  onLocaleChange: (locale: Locale) => void;
 }
 
-export function LanguageSwitcher({ locale, onLocaleChange }: LanguageSwitcherProps) {
+export function LanguageSwitcher({ locale }: LanguageSwitcherProps) {
   return (
     <div className="flex items-center gap-1 bg-white/10 rounded-lg p-1">
-      <button
-        onClick={() => onLocaleChange('en')}
+      <Link
+        href="/"
         className={cn(
           'px-2 py-1 rounded text-xs font-medium transition-all',
           locale === 'en'
@@ -22,9 +21,9 @@ export function LanguageSwitcher({ locale, onLocaleChange }: LanguageSwitcherPro
         )}
       >
         EN
-      </button>
-      <button
-        onClick={() => onLocaleChange('zh')}
+      </Link>
+      <Link
+        href="/zh"
         className={cn(
           'px-2 py-1 rounded text-xs font-medium transition-all',
           locale === 'zh'
@@ -33,8 +32,7 @@ export function LanguageSwitcher({ locale, onLocaleChange }: LanguageSwitcherPro
         )}
       >
         中文
-      </button>
+      </Link>
     </div>
   );
 }
-
