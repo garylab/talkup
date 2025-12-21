@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Trash2, Mic, Video, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Trash2, Mic, Video, ChevronDown, ChevronUp, Loader2, Search, X } from 'lucide-react';
 import { RecordingStudio } from '@/components/RecordingStudio';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useRecorder } from '@/hooks/useRecorder';
@@ -33,6 +33,7 @@ export default function Home() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [blobUrls, setBlobUrls] = useState<Record<string, string>>({});
   const [loadingBlob, setLoadingBlob] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     setIsMounted(true);
@@ -88,10 +89,23 @@ export default function Home() {
     recorder.startRecording(type);
   }, [recorder]);
 
-  // Pagination
-  const totalPages = Math.ceil(recordings.length / ITEMS_PER_PAGE);
+  // Filter recordings by search query
+  const filteredRecordings = searchQuery.trim()
+    ? recordings.filter(r => 
+        r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (r.topic && r.topic.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : recordings;
+
+  // Pagination (on filtered results)
+  const totalPages = Math.ceil(filteredRecordings.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedRecordings = recordings.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const paginatedRecordings = filteredRecordings.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   // Toggle preview and load blob if needed
   const togglePreview = async (id: string) => {
@@ -188,10 +202,42 @@ export default function Home() {
         {/* Recordings List */}
         {isMounted && recordings.length > 0 && (
           <div className="mt-6">
-            <h2 className="text-lg font-semibold mb-3 text-slate-300">
-              {t('recordings.title')} ({recordings.length})
-            </h2>
+            <div className="flex items-center justify-between gap-4 mb-3">
+              <h2 className="text-lg font-semibold text-slate-300">
+                {t('recordings.title')} ({filteredRecordings.length})
+              </h2>
+              
+              {/* Search box */}
+              <div className="relative flex-1 max-w-xs">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t('recordings.search')}
+                  className={cn(
+                    'w-full pl-9 pr-8 py-1.5 rounded-lg text-sm',
+                    'bg-white/5 border border-white/10',
+                    'placeholder:text-slate-500 text-white',
+                    'focus:outline-none focus:ring-1 focus:ring-rose-500/50 focus:border-rose-500/50'
+                  )}
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-white/10"
+                  >
+                    <X className="w-3.5 h-3.5 text-slate-400" />
+                  </button>
+                )}
+              </div>
+            </div>
             
+            {paginatedRecordings.length === 0 ? (
+              <div className="glass-card p-8 text-center text-slate-400">
+                {t('recordings.noResults')}
+              </div>
+            ) : (
             <div className="space-y-2">
               {paginatedRecordings.map((recording) => {
                 const isExpanded = expandedId === recording.id;
@@ -284,6 +330,7 @@ export default function Home() {
                 );
               })}
             </div>
+            )}
 
             {/* Pagination */}
             {totalPages > 1 && (
