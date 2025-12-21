@@ -1,0 +1,37 @@
+{
+  "app": {
+    "title": "Practice Speaking",
+    "description": "Get a random topic or create your own, then record yourself to improve."
+  },
+  "topic": {
+    "question": "What will you talk about?",
+    "getTopic": "Get topic",
+    "or": "or",
+    "create": "Create",
+    "enterTopic": "Enter your topic",
+    "placeholder": "e.g. My Favorite Memory",
+    "use": "Use",
+    "refresh": "Refresh"
+  },
+  "recording": {
+    "startVideo": "Start Video",
+    "startAudio": "Start Audio",
+    "pause": "Pause",
+    "resume": "Resume",
+    "stop": "Stop",
+    "back": "Back",
+    "rec": "REC",
+    "paused": "PAUSED"
+  },
+  "recordings": {
+    "title": "Recordings",
+    "search": "Search recordings...",
+    "noResults": "No recordings found",
+    "notFound": "Recording not found",
+    "deleteConfirm": "Delete this recording?"
+  },
+  "common": {
+    "delete": "Delete"
+  }
+}
+

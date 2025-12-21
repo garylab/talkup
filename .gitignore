@@ -1,0 +1,54 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.uv/
+
+# Build outputs
+.next/
+out/
+dist/
+build/
+*.egg-info/
+
+# Environment
+.env
+.env.local
+.env.*.local
+secrets-production.yaml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# Local data
+*.db
+*.sqlite3
+recordings/*
+!recordings/.gitkeep
+
+# Kubernetes secrets
+*-secrets.yaml
+*.pem
+*.key
+
+# Lock files (optional - uncomment if you want to ignore)
+# package-lock.json
+# uv.lock
+
