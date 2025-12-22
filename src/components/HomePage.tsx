@@ -26,8 +26,8 @@ export function HomePage({ locale }: HomePageProps) {
   // Topic state
   const [topic, setTopic] = useState<string | null>(null);
   
-  // Local storage
-  const { recordings, addRecording, removeRecording } = useLocalRecordings();
+  // Local storage (IndexedDB)
+  const { recordings, isLoading: isLoadingRecordings, addRecording, removeRecording } = useLocalRecordings();
 
   // PWA install
   const { isInstallable, install } = usePWAInstall();
@@ -285,7 +285,7 @@ export function HomePage({ locale }: HomePageProps) {
         />
 
         {/* Recordings List */}
-        {isMounted && recordings.length > 0 && (
+        {isMounted && (isLoadingRecordings || recordings.length > 0) && (
           <div className="mt-6">
             <div className="flex items-center justify-between gap-4 mb-3">
               <h2 className="text-lg font-semibold text-slate-300">
@@ -318,7 +318,11 @@ export function HomePage({ locale }: HomePageProps) {
               </div>
             </div>
             
-            {paginatedRecordings.length === 0 ? (
+            {isLoadingRecordings ? (
+              <div className="glass-card p-8 flex items-center justify-center">
+                <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+              </div>
+            ) : paginatedRecordings.length === 0 ? (
               <div className="glass-card p-8 text-center text-slate-400">
                 {t('recordings.noResults')}
               </div>

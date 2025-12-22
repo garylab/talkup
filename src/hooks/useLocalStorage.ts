@@ -1,7 +1,12 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { saveBlob, deleteBlob } from '@/lib/indexedDB';
+import { 
+  saveRecording, 
+  getAllRecordings, 
+  deleteRecording, 
+  updateRecording 
+} from '@/lib/indexedDB';
 
 export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((prev: T) => T)) => void] {
   // Get initial value from localStorage or use provided initial value
@@ -42,7 +47,7 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T 
   return [storedValue, setValue];
 }
 
-// Local recording storage for offline support
+// Local recording storage - now using IndexedDB
 export interface LocalRecording {
   id: string;
   title: string;
@@ -67,47 +72,58 @@ export interface AddRecordingInput {
 }
 
 export function useLocalRecordings() {
-  const [recordings, setRecordings] = useLocalStorage<LocalRecording[]>('random-speech-recordings', []);
+  const [recordings, setRecordings] = useState<LocalRecording[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load recordings from IndexedDB on mount
+  useEffect(() => {
+    let mounted = true;
+    
+    async function loadRecordings() {
+      try {
+        const data = await getAllRecordings();
+        if (mounted) {
+          setRecordings(data);
+        }
+      } catch (error) {
+        console.error('Failed to load recordings:', error);
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadRecordings();
+    
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const addRecording = useCallback(async (input: AddRecordingInput) => {
-    const id = crypto.randomUUID();
-    
-    // Save blob to IndexedDB
-    await saveBlob(id, input.blob);
-    
-    const newRecording: LocalRecording = {
-      id,
-      title: input.title,
-      topic: input.topic,
-      topicCategory: input.topicCategory,
-      type: input.type,
-      format: input.format,
-      duration: input.duration,
-      createdAt: new Date().toISOString(),
-      synced: false,
-    };
-    
+    const newRecording = await saveRecording(input);
     setRecordings((prev) => [newRecording, ...prev]);
     return newRecording;
-  }, [setRecordings]);
+  }, []);
 
   const removeRecording = useCallback(async (id: string) => {
-    // Delete blob from IndexedDB
-    await deleteBlob(id);
+    await deleteRecording(id);
     setRecordings((prev) => prev.filter((r) => r.id !== id));
-  }, [setRecordings]);
+  }, []);
 
-  const markAsSynced = useCallback((id: string) => {
+  const markAsSynced = useCallback(async (id: string) => {
+    await updateRecording(id, { synced: true });
     setRecordings((prev) =>
       prev.map((r) => (r.id === id ? { ...r, synced: true } : r))
     );
-  }, [setRecordings]);
+  }, []);
 
   return {
     recordings,
+    isLoading,
     addRecording,
     removeRecording,
     markAsSynced,
   };
 }
-

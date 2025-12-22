@@ -134,7 +134,7 @@ export function useRecorder({ onDataAvailable, onRecordingComplete }: UseRecorde
       chunksRef.current = [];
       setRecordingType(type);
 
-      const audioConstraints: MediaTrackConstraints = audioDeviceId 
+      const audioConstraints: MediaTrackConstraints | boolean = audioDeviceId 
         ? { deviceId: { exact: audioDeviceId } }
         : true;
       
