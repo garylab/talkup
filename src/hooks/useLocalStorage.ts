@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { saveBlob, deleteBlob } from '@/lib/indexedDB';
+import { saveBlob, deleteBlob } from '@/lib/storage';
 import { uuid7 } from '@/lib/utils';
 
 // Simple localStorage hook - iOS compatible

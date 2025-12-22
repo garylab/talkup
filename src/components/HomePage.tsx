@@ -7,7 +7,7 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useRecorder } from '@/hooks/useRecorder';
 import { useLocalRecordings } from '@/hooks/useLocalStorage';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
-import { getBlobUrl } from '@/lib/indexedDB';
+import { getBlobUrl } from '@/lib/storage';
 import { cn, formatDuration, formatDate, formatFileSize } from '@/lib/utils';
 import { t as translate, getTopics, Locale } from '@/i18n';
 import type { RecordingType } from '@/types';
