@@ -237,16 +237,17 @@ export function HomePage({ locale }: HomePageProps) {
       <div className="relative z-10 w-full max-w-4xl mx-auto">
         {/* Header with language switcher */}
         <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight shrink-0">
               <span className="text-gradient">{t('app.title')}</span>
             </h1>
+            <span className="hidden sm:block text-sm text-slate-400 truncate">{t('topic.question')}</span>
             {/* PWA Install Button */}
             {isInstallable && (
               <button
                 onClick={install}
                 className={cn(
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium',
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium shrink-0',
                   'bg-gradient-to-r from-emerald-500 to-teal-600',
                   'hover:from-emerald-600 hover:to-teal-700',
                   'transition-all hover:shadow-lg hover:shadow-emerald-500/25 active:scale-95'

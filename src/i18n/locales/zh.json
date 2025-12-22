@@ -5,7 +5,6 @@
   },
   "topic": {
     "question": "获取或创建话题，然后录制自己来提升。",
-    "getTopic": "获取话题",
     "or": "或",
     "create": "创建",
     "enterTopic": "输入你的话题",

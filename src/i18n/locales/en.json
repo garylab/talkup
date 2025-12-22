@@ -5,7 +5,6 @@
   },
   "topic": {
     "question": "Get or create a topic, then record yourself to improve.",
-    "getTopic": "Get topic",
     "or": "or",
     "create": "Create",
     "enterTopic": "Enter your topic",

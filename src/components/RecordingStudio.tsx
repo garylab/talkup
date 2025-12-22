@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { Mic, Video, Pause, Play, Square, Circle, Plus, Undo2, RefreshCcw, Maximize2, Minimize2, Settings, X } from 'lucide-react';
+import { Mic, Video, Pause, Play, Square, Circle, Plus, Undo2, RefreshCcw, Maximize2, Minimize2, ChevronDown, Check } from 'lucide-react';
 import { cn, formatDuration } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
@@ -68,9 +68,11 @@ export function RecordingStudio({
   } = useSettings();
   
   // Local UI state
-  const [showSettings, setShowSettings] = useState(false);
   const [audioDevices, setAudioDevices] = useState<MediaDeviceOption[]>([]);
   const [videoDevices, setVideoDevices] = useState<MediaDeviceOption[]>([]);
+  const [showMicDropdown, setShowMicDropdown] = useState(false);
+  const [showCameraDropdown, setShowCameraDropdown] = useState(false);
+  const [devicesLoaded, setDevicesLoaded] = useState(false);
   
   // Derived values from settings
   const recordMode = settings.recordMode;
@@ -96,12 +98,13 @@ export function RecordingStudio({
     }
   }, [isMaximized, mediaStream, recordingType]);
 
-  // Handle ESC key to exit maximized mode or close settings
+  // Handle ESC key to exit maximized mode or close dropdowns
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (showSettings) {
-          setShowSettings(false);
+        if (showMicDropdown || showCameraDropdown) {
+          setShowMicDropdown(false);
+          setShowCameraDropdown(false);
         } else if (isMaximized) {
           setIsMaximized(false);
         }
@@ -109,7 +112,20 @@ export function RecordingStudio({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isMaximized, showSettings]);
+  }, [isMaximized, showMicDropdown, showCameraDropdown]);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-dropdown]')) {
+        setShowMicDropdown(false);
+        setShowCameraDropdown(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   // Reset maximized state when recording stops
   useEffect(() => {
@@ -149,6 +165,7 @@ export function RecordingStudio({
 
       setAudioDevices(audioInputs);
       setVideoDevices(videoInputs);
+      setDevicesLoaded(true);
 
       // Set default selections if not already set
       if (!selectedAudioDevice && audioInputs.length > 0) {
@@ -159,15 +176,14 @@ export function RecordingStudio({
       }
     } catch (err) {
       console.error('Failed to load devices:', err);
+      setDevicesLoaded(true);
     }
-  }, [selectedAudioDevice, selectedVideoDevice]);
+  }, [selectedAudioDevice, selectedVideoDevice, setSelectedAudioDevice, setSelectedVideoDevice]);
 
-  // Load devices when settings panel opens
+  // Load devices on mount
   useEffect(() => {
-    if (showSettings) {
-      loadDevices();
-    }
-  }, [showSettings, loadDevices]);
+    loadDevices();
+  }, [loadDevices]);
 
   const isRecording = state === 'recording';
   const isPaused = state === 'paused';
@@ -189,6 +205,14 @@ export function RecordingStudio({
     }
   }, [onTopicChange, topics]);
 
+  // Auto-load topic on mount
+  useEffect(() => {
+    if (!topic && isIdle) {
+      handleGetTopic();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleCreateTopic = () => {
     if (customTopic.trim()) {
       onTopicChange(customTopic.trim());
@@ -197,22 +221,12 @@ export function RecordingStudio({
     }
   };
 
-  const handleClearTopic = () => {
-    onTopicChange(null);
-    setIsCreatingTopic(false);
-    setCustomTopic('');
-  };
-
   const handleStart = () => {
     onStart(recordMode, selectedAudioDevice || undefined, selectedVideoDevice || undefined);
   };
 
   const toggleMaximize = () => {
     setIsMaximized(!isMaximized);
-  };
-
-  const toggleSettings = () => {
-    setShowSettings(!showSettings);
   };
 
   return (
@@ -242,7 +256,7 @@ export function RecordingStudio({
 
             {/* Recording indicator & duration - top right */}
             <div className="absolute top-6 right-6 flex items-center gap-3">
-              <div className="flex items-center gap-2 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-lg">
+              <div className="flex items-center gap-2 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-lg h-9">
                 <Circle
                   className={cn(
                     'w-3 h-3 fill-current',
@@ -253,7 +267,7 @@ export function RecordingStudio({
                   {isRecording ? t('recording.rec') : t('recording.paused')}
                 </span>
               </div>
-              <div className="bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-lg">
+              <div className="bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-lg h-9 flex items-center">
                 <span className="font-mono text-xl">{formatDuration(duration)}</span>
               </div>
             </div>
@@ -281,7 +295,7 @@ export function RecordingStudio({
                 </button>
                 <button
                   onClick={onStop}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl font-medium bg-white/10 hover:bg-white/20 transition-all active:scale-95"
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl font-medium bg-red-500/80 hover:bg-red-500 transition-all active:scale-95"
                 >
                   <Square className="w-5 h-5" />
                   {t('recording.stop')}
@@ -300,7 +314,7 @@ export function RecordingStudio({
                 </button>
                 <button
                   onClick={onStop}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl font-medium bg-white/10 hover:bg-white/20 transition-all active:scale-95"
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl font-medium bg-red-500/80 hover:bg-red-500 transition-all active:scale-95"
                 >
                   <Square className="w-5 h-5" />
                   {t('recording.stop')}
@@ -364,47 +378,12 @@ export function RecordingStudio({
             )
           )}
 
-          {/* IDLE STATE: Topic selection */}
+          {/* IDLE STATE: Topic display */}
           {isIdle && !isStopped && (
             <div className="absolute inset-0 flex flex-col items-center justify-center px-4 py-6 md:p-6">
-              {/* No topic - show selection buttons */}
-              {!topic && !isCreatingTopic && (
-                <div className="text-center">
-                  <p className="text-slate-400 mb-3 md:mb-6 text-sm md:text-lg">{t('topic.question')}</p>
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-1.5 md:gap-3">
-                    <button
-                      onClick={handleGetTopic}
-                      disabled={isLoadingTopic}
-                      className={cn(
-                        'flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-6 md:py-3 rounded-lg md:rounded-xl font-medium text-xs md:text-base',
-                        'bg-gradient-to-r from-amber-400 to-orange-500 text-black',
-                        'hover:from-amber-500 hover:to-orange-600',
-                        'transition-all hover:shadow-lg hover:shadow-orange-500/25',
-                        'disabled:opacity-50 disabled:cursor-not-allowed'
-                      )}
-                    >
-                      <RefreshCcw className={cn('w-3.5 h-3.5 md:w-5 md:h-5', isLoadingTopic && 'animate-spin')} />
-                      {t('topic.getTopic')}
-                    </button>
-                    <span className="text-slate-500 text-xs md:text-base">{t('topic.or')}</span>
-                    <button
-                      onClick={() => setIsCreatingTopic(true)}
-                      className={cn(
-                        'flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-6 md:py-3 rounded-lg md:rounded-xl font-medium text-xs md:text-base',
-                        'bg-white/10 border border-white/20',
-                        'hover:bg-white/20 transition-all'
-                      )}
-                    >
-                      <Plus className="w-3.5 h-3.5 md:w-5 md:h-5" />
-                      {t('topic.create')}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Creating custom topic */}
-              {!topic && isCreatingTopic && (
-                <div className="text-center w-full max-w-lg px-2">
+              {/* Creating custom topic - overlay */}
+              {isCreatingTopic ? (
+                <div className="text-center w-full max-w-lg px-2 animate-fade-in">
                   <p className="text-slate-400 mb-3 md:mb-4 text-sm md:text-base">{t('topic.enterTopic')}</p>
                   <div className="flex items-center gap-2 md:gap-3">
                     <div className="flex-1 relative">
@@ -443,13 +422,13 @@ export function RecordingStudio({
                     </button>
                   </div>
                 </div>
-              )}
-
-              {/* Topic selected - LARGE display */}
-              {topic && (
+              ) : (
+                /* Topic display - always show */
                 <div className="text-center animate-fade-in px-4">
                   <div className="mb-3 md:mb-4">
-                    <h2 className="text-2xl md:text-4xl font-bold text-white">{topic}</h2>
+                    <h2 className="text-2xl md:text-4xl font-bold text-white">
+                      {topic || (isLoadingTopic ? '...' : '')}
+                    </h2>
                   </div>
                   <div className="flex items-center justify-center gap-2 md:gap-3">
                     <button
@@ -461,11 +440,11 @@ export function RecordingStudio({
                       {t('topic.refresh')}
                     </button>
                     <button
-                      onClick={handleClearTopic}
-                      className="p-1.5 md:p-2 rounded-md md:rounded-lg bg-white/10 hover:bg-white/20 transition-all"
-                      title={t('recording.back')}
+                      onClick={() => setIsCreatingTopic(true)}
+                      className="flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-md md:rounded-lg text-xs md:text-sm bg-white/10 hover:bg-white/20 transition-all"
                     >
-                      <Undo2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                      <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                      {t('topic.create')}
                     </button>
                   </div>
                 </div>
@@ -483,7 +462,7 @@ export function RecordingStudio({
           {/* Recording indicator & duration - top right */}
           {isActive && (
             <div className="absolute top-3 right-3 flex items-center gap-2">
-              <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-lg">
+              <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-lg h-7">
                 <Circle
                   className={cn(
                     'w-2.5 h-2.5 fill-current',
@@ -494,7 +473,7 @@ export function RecordingStudio({
                   {isRecording ? t('recording.rec') : t('recording.paused')}
                 </span>
               </div>
-              <div className="bg-black/60 backdrop-blur-sm px-2 py-1 rounded-lg">
+              <div className="bg-black/60 backdrop-blur-sm px-2 py-1 rounded-lg h-7 flex items-center">
                 <span className="font-mono text-sm">{formatDuration(duration)}</span>
               </div>
             </div>
@@ -526,39 +505,166 @@ export function RecordingStudio({
           </div>
         )}
 
-        {/* Controls */}
-        <div className="flex items-center justify-center gap-2 md:gap-3">
+        {/* Controls Toolbar */}
+        <div className="flex items-center justify-between gap-2 md:gap-3">
             {isIdle && (
               <>
-                {/* Start Button */}
-                <button
-                  onClick={handleStart}
-                  disabled={!topic}
-                  className={cn(
-                    'flex items-center gap-1.5 md:gap-2 px-4 py-2 md:px-5 md:py-2.5 rounded-lg md:rounded-xl font-semibold text-sm md:text-base',
-                    recordMode === 'video'
-                      ? 'bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 hover:shadow-violet-500/25'
-                      : 'bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 hover:shadow-rose-500/25',
-                    'transition-all hover:shadow-lg active:scale-95',
-                    'disabled:opacity-50 disabled:cursor-not-allowed'
-                  )}
-                >
-                  {recordMode === 'video' ? (
-                    <Video className="w-4 h-4 md:w-5 md:h-5" />
-                  ) : (
-                    <Mic className="w-4 h-4 md:w-5 md:h-5" />
-                  )}
-                  {recordMode === 'video' ? t('recording.video') : t('recording.audio')}
-                </button>
+                {/* Left side: Start Button + Mode Toggle */}
+                <div className="flex items-center gap-2 md:gap-3">
+                  {/* Start Button */}
+                  <button
+                    onClick={handleStart}
+                    disabled={!topic}
+                    className={cn(
+                      'flex items-center gap-1 md:gap-1.5 px-3 py-1.5 md:px-4 md:py-2 rounded-lg font-semibold text-xs md:text-sm',
+                      recordMode === 'video'
+                        ? 'bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 hover:shadow-violet-500/25'
+                        : 'bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 hover:shadow-rose-500/25',
+                      'transition-all hover:shadow-lg active:scale-95',
+                      'disabled:opacity-50 disabled:cursor-not-allowed'
+                    )}
+                  >
+                    <Play className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    {t('recording.start')}
+                  </button>
 
-                {/* Settings Button */}
-                <button
-                  onClick={toggleSettings}
-                  className="p-2 md:p-2.5 rounded-lg md:rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
-                  title={t('settings.title')}
-                >
-                  <Settings className="w-4 h-4 md:w-5 md:h-5" />
-                </button>
+                  {/* Video/Audio Mode Toggle */}
+                  <div className="flex items-center bg-white/5 rounded-lg border border-white/10">
+                    <button
+                      onClick={() => setRecordMode('video')}
+                      className={cn(
+                        'flex items-center gap-1 md:gap-1.5 px-2 py-1.5 md:px-2.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all',
+                        recordMode === 'video'
+                          ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-sm'
+                          : 'text-slate-400 hover:text-white hover:bg-white/10'
+                      )}
+                    >
+                      <Video className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                      <span className="hidden sm:inline">{t('recording.video')}</span>
+                    </button>
+                    <button
+                      onClick={() => setRecordMode('audio')}
+                      className={cn(
+                        'flex items-center gap-1 md:gap-1.5 px-2 py-1.5 md:px-2.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all',
+                        recordMode === 'audio'
+                          ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-sm'
+                          : 'text-slate-400 hover:text-white hover:bg-white/10'
+                      )}
+                    >
+                      <Mic className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                      <span className="hidden sm:inline">{t('recording.audio')}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Right side: Device Dropdowns */}
+                <div className="flex items-center gap-2 md:gap-3">
+                  {/* Camera Dropdown (only shown when video mode) */}
+                  {recordMode === 'video' && (
+                    <div className="relative" data-dropdown>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowCameraDropdown(!showCameraDropdown);
+                          setShowMicDropdown(false);
+                        }}
+                        className={cn(
+                          'flex items-center gap-1 px-2 py-1.5 md:px-2.5 md:py-2 rounded-lg',
+                          'bg-white/5 border border-white/10 text-slate-300',
+                          'hover:bg-white/10 hover:text-white transition-all',
+                          showCameraDropdown && 'bg-white/10 text-white'
+                        )}
+                      >
+                        <Video className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                        <ChevronDown className={cn('w-3 h-3 transition-transform', showCameraDropdown && 'rotate-180')} />
+                      </button>
+                      
+                      {showCameraDropdown && (
+                        <div className="absolute top-full right-0 mt-1 w-64 bg-slate-950 border border-white/20 rounded-lg shadow-2xl z-[100] animate-fade-in">
+                          <div className="p-1.5 max-h-48 overflow-y-auto">
+                            {videoDevices.length === 0 ? (
+                              <div className="px-3 py-2 text-sm text-slate-500">{t('settings.noDevices')}</div>
+                            ) : (
+                              videoDevices.map((device) => (
+                                <button
+                                  key={device.deviceId}
+                                  onClick={() => {
+                                    setSelectedVideoDevice(device.deviceId);
+                                    setShowCameraDropdown(false);
+                                  }}
+                                  className={cn(
+                                    'w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-all',
+                                    device.deviceId === selectedVideoDevice
+                                      ? 'bg-violet-500/20 text-violet-300'
+                                      : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                                  )}
+                                >
+                                  <Check className={cn(
+                                    'w-4 h-4 shrink-0',
+                                    device.deviceId === selectedVideoDevice ? 'opacity-100' : 'opacity-0'
+                                  )} />
+                                  <span className="line-clamp-1 text-left">{device.label}</span>
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Microphone Dropdown */}
+                  <div className="relative" data-dropdown>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowMicDropdown(!showMicDropdown);
+                        setShowCameraDropdown(false);
+                      }}
+                      className={cn(
+                        'flex items-center gap-1 px-2 py-1.5 md:px-2.5 md:py-2 rounded-lg',
+                        'bg-white/5 border border-white/10 text-slate-300',
+                        'hover:bg-white/10 hover:text-white transition-all',
+                        showMicDropdown && 'bg-white/10 text-white'
+                      )}
+                    >
+                      <Mic className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                      <ChevronDown className={cn('w-3 h-3 transition-transform', showMicDropdown && 'rotate-180')} />
+                    </button>
+                    
+                    {showMicDropdown && (
+                      <div className="absolute top-full right-0 mt-1 w-64 bg-slate-950 border border-white/20 rounded-lg shadow-2xl z-[100] animate-fade-in">
+                        <div className="p-1.5 max-h-48 overflow-y-auto">
+                          {audioDevices.length === 0 ? (
+                            <div className="px-3 py-2 text-sm text-slate-500">{t('settings.noDevices')}</div>
+                          ) : (
+                            audioDevices.map((device) => (
+                              <button
+                                key={device.deviceId}
+                                onClick={() => {
+                                  setSelectedAudioDevice(device.deviceId);
+                                  setShowMicDropdown(false);
+                                }}
+                                className={cn(
+                                  'w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-all',
+                                  device.deviceId === selectedAudioDevice
+                                    ? 'bg-rose-500/20 text-rose-300'
+                                    : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                                )}
+                              >
+                                <Check className={cn(
+                                  'w-4 h-4 shrink-0',
+                                  device.deviceId === selectedAudioDevice ? 'opacity-100' : 'opacity-0'
+                                )} />
+                                <span className="line-clamp-1 text-left">{device.label}</span>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </>
             )}
 
@@ -573,7 +679,7 @@ export function RecordingStudio({
                 </button>
                 <button
                   onClick={onStop}
-                  className="flex items-center gap-1.5 md:gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-lg md:rounded-xl font-medium text-sm md:text-base bg-white/10 hover:bg-white/20 transition-all active:scale-95"
+                  className="flex items-center gap-1.5 md:gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-lg md:rounded-xl font-medium text-sm md:text-base bg-red-500/80 hover:bg-red-500 transition-all active:scale-95"
                 >
                   <Square className="w-3.5 h-3.5 md:w-4 md:h-4" />
                   {t('recording.stop')}
@@ -592,7 +698,7 @@ export function RecordingStudio({
                 </button>
                 <button
                   onClick={onStop}
-                  className="flex items-center gap-1.5 md:gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-lg md:rounded-xl font-medium text-sm md:text-base bg-white/10 hover:bg-white/20 transition-all active:scale-95"
+                  className="flex items-center gap-1.5 md:gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-lg md:rounded-xl font-medium text-sm md:text-base bg-red-500/80 hover:bg-red-500 transition-all active:scale-95"
                 >
                   <Square className="w-3.5 h-3.5 md:w-4 md:h-4" />
                   {t('recording.stop')}
@@ -619,136 +725,6 @@ export function RecordingStudio({
         </div>
 
       </div>
-
-      {/* Settings Modal */}
-      {showSettings && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => setShowSettings(false)}
-          />
-          
-          {/* Modal */}
-          <div className="relative w-full max-w-sm bg-slate-900/95 border border-white/10 rounded-2xl shadow-2xl animate-fade-in">
-            <div className="flex items-center justify-between p-4 border-b border-white/10">
-              <h3 className="font-semibold text-white">{t('settings.title')}</h3>
-              <button
-                onClick={() => setShowSettings(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            
-            <div className="p-4 space-y-4">
-              {/* Recording Mode */}
-              <div>
-                <label className="block text-sm text-slate-400 mb-2">
-                  {t('settings.mode')}
-                </label>
-                <div className="flex items-center bg-white/5 rounded-lg p-1 border border-white/10">
-                  <button
-                    onClick={() => setRecordMode('video')}
-                    className={cn(
-                      'flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all',
-                      recordMode === 'video'
-                        ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-md'
-                        : 'text-slate-400 hover:text-white hover:bg-white/10'
-                    )}
-                  >
-                    <Video className="w-4 h-4" />
-                    {t('recording.video')}
-                  </button>
-                  <button
-                    onClick={() => setRecordMode('audio')}
-                    className={cn(
-                      'flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all',
-                      recordMode === 'audio'
-                        ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-md'
-                        : 'text-slate-400 hover:text-white hover:bg-white/10'
-                    )}
-                  >
-                    <Mic className="w-4 h-4" />
-                    {t('recording.audio')}
-                  </button>
-                </div>
-              </div>
-
-              {/* Microphone Selection */}
-              <div>
-                <label className="block text-sm text-slate-400 mb-2">
-                  <Mic className="w-4 h-4 inline mr-2" />
-                  {t('settings.microphone')}
-                </label>
-                <select
-                  value={selectedAudioDevice}
-                  onChange={(e) => setSelectedAudioDevice(e.target.value)}
-                  className={cn(
-                    'w-full px-3 py-2 rounded-lg text-sm',
-                    'bg-white/10 border border-white/20 text-white',
-                    'focus:outline-none focus:ring-2 focus:ring-rose-500/50',
-                    'cursor-pointer'
-                  )}
-                >
-                  {audioDevices.length === 0 ? (
-                    <option value="">{t('settings.noDevices')}</option>
-                  ) : (
-                    audioDevices.map((device) => (
-                      <option key={device.deviceId} value={device.deviceId} className="bg-slate-800">
-                        {device.label}
-                      </option>
-                    ))
-                  )}
-                </select>
-              </div>
-
-              {/* Camera Selection (only shown when video mode) */}
-              {recordMode === 'video' && (
-                <div>
-                  <label className="block text-sm text-slate-400 mb-2">
-                    <Video className="w-4 h-4 inline mr-2" />
-                    {t('settings.camera')}
-                  </label>
-                  <select
-                    value={selectedVideoDevice}
-                    onChange={(e) => setSelectedVideoDevice(e.target.value)}
-                    className={cn(
-                      'w-full px-3 py-2 rounded-lg text-sm',
-                      'bg-white/10 border border-white/20 text-white',
-                      'focus:outline-none focus:ring-2 focus:ring-violet-500/50',
-                      'cursor-pointer'
-                    )}
-                  >
-                    {videoDevices.length === 0 ? (
-                      <option value="">{t('settings.noDevices')}</option>
-                    ) : (
-                      videoDevices.map((device) => (
-                        <option key={device.deviceId} value={device.deviceId} className="bg-slate-800">
-                          {device.label}
-                        </option>
-                      ))
-                    )}
-                  </select>
-                </div>
-              )}
-
-              {/* Save Button */}
-              <button
-                onClick={() => setShowSettings(false)}
-                className={cn(
-                  'w-full mt-2 py-2.5 rounded-lg font-medium text-sm',
-                  'bg-gradient-to-r from-emerald-500 to-teal-600',
-                  'hover:from-emerald-600 hover:to-teal-700',
-                  'transition-all hover:shadow-lg hover:shadow-emerald-500/25 active:scale-[0.98]'
-                )}
-              >
-                {t('settings.save')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }
