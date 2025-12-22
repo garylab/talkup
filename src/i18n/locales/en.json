@@ -4,7 +4,7 @@
     "description": "Get a random topic or create your own, then record yourself to improve."
   },
   "topic": {
-    "question": "What will you talk about?",
+    "question": "Get or create a topic, then record yourself to improve.",
     "getTopic": "Get topic",
     "or": "or",
     "create": "Create",

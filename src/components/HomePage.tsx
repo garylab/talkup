@@ -171,12 +171,9 @@ export function HomePage({ locale }: HomePageProps) {
         <div className="flex items-center justify-between mb-5">
           <div className="flex-1" />
           <div className="text-center flex-1">
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight mb-1">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
               <span className="text-gradient">{t('app.title')}</span>
             </h1>
-            <p className="text-slate-400 text-sm max-w-md mx-auto">
-              {t('app.description')}
-            </p>
           </div>
           <div className="flex-1 flex justify-end">
             <LanguageSwitcher locale={locale} />
