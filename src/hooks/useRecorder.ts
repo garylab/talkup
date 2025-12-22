@@ -25,6 +25,8 @@ interface UseRecorderReturn {
   resumeRecording: () => void;
   stopRecording: () => void;
   resetRecording: () => void;
+  switchAudioDevice: (deviceId: string) => Promise<void>;
+  switchVideoDevice: (deviceId: string) => Promise<void>;
 }
 
 // Detect if browser supports MP4 recording (Safari)
@@ -201,6 +203,90 @@ export function useRecorder({ onDataAvailable, onRecordingComplete }: UseRecorde
     }
   }, [onDataAvailable, startTimer]);
 
+  // Switch audio device while recording
+  const switchAudioDevice = useCallback(async (deviceId: string) => {
+    if (!mediaStream || (state !== 'recording' && state !== 'paused')) {
+      return;
+    }
+
+    try {
+      console.log('[useRecorder] Switching audio device to:', deviceId);
+      
+      // Get new audio track
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        audio: { deviceId },
+      });
+      const newAudioTrack = newStream.getAudioTracks()[0];
+      
+      if (!newAudioTrack) {
+        console.error('[useRecorder] No audio track from new device');
+        return;
+      }
+
+      // Get old audio track
+      const oldAudioTrack = mediaStream.getAudioTracks()[0];
+      
+      // Remove old track and add new one to the stream
+      if (oldAudioTrack) {
+        mediaStream.removeTrack(oldAudioTrack);
+        oldAudioTrack.stop();
+      }
+      mediaStream.addTrack(newAudioTrack);
+
+      // Force React to re-render with updated stream
+      setMediaStream(mediaStream);
+      
+      console.log('[useRecorder] Audio device switched successfully');
+    } catch (err) {
+      console.error('[useRecorder] Failed to switch audio device:', err);
+    }
+  }, [mediaStream, state]);
+
+  // Switch video device while recording
+  const switchVideoDevice = useCallback(async (deviceId: string) => {
+    if (!mediaStream || recordingType !== 'video' || (state !== 'recording' && state !== 'paused')) {
+      return;
+    }
+
+    try {
+      console.log('[useRecorder] Switching video device to:', deviceId);
+      
+      // Get new video track
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          deviceId,
+          facingMode: 'user',
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+      });
+      const newVideoTrack = newStream.getVideoTracks()[0];
+      
+      if (!newVideoTrack) {
+        console.error('[useRecorder] No video track from new device');
+        return;
+      }
+
+      // Get old video track
+      const oldVideoTrack = mediaStream.getVideoTracks()[0];
+      
+      // Remove old track and add new one to the stream
+      if (oldVideoTrack) {
+        mediaStream.removeTrack(oldVideoTrack);
+        oldVideoTrack.stop();
+      }
+      mediaStream.addTrack(newVideoTrack);
+
+      // Trigger re-render by creating a new reference
+      // This is needed because mutating the stream doesn't trigger React updates
+      setMediaStream(new MediaStream(mediaStream.getTracks()));
+      
+      console.log('[useRecorder] Video device switched successfully');
+    } catch (err) {
+      console.error('[useRecorder] Failed to switch video device:', err);
+    }
+  }, [mediaStream, recordingType, state]);
+
   const pauseRecording = useCallback(() => {
     if (mediaRecorderRef.current && state === 'recording') {
       mediaRecorderRef.current.pause();
@@ -262,6 +348,7 @@ export function useRecorder({ onDataAvailable, onRecordingComplete }: UseRecorde
     resumeRecording,
     stopRecording,
     resetRecording,
+    switchAudioDevice,
+    switchVideoDevice,
   };
 }
-

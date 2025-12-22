@@ -48,31 +48,29 @@ export function LanguageSwitcher({ locale }: LanguageSwitcherProps) {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          'flex items-center gap-1.5 px-1.5 py-1 rounded-lg text-sm',
-          'hover:bg-white/10 transition-all',
-          isOpen && 'bg-white/10'
+          'flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-sm',
+          'hover:bg-white/[0.06] transition-colors',
+          isOpen && 'bg-white/[0.06]'
         )}
       >
-        <span>{localeFlags[locale]}</span>
-        <span className="hidden sm:inline text-slate-300">{localeNames[locale]}</span>
-        <ChevronDown className={cn('w-3.5 h-3.5 text-slate-400 transition-transform', isOpen && 'rotate-180')} />
+        <span className="text-lg">{localeFlags[locale]}</span>
+        <span className="hidden sm:inline text-slate-400">{localeNames[locale]}</span>
+        <ChevronDown className={cn('w-3.5 h-3.5 text-slate-500 transition-transform', isOpen && 'rotate-180')} />
       </button>
 
       {isOpen && (
-        <div className="absolute top-full right-0 mt-1 w-40 bg-slate-950 border border-white/20 rounded-lg shadow-2xl z-[100] animate-fade-in">
+        <div className="absolute top-full right-0 mt-2 w-44 dropdown-menu z-[100] animate-fade-in">
           <div className="py-1">
             {locales.map((loc) => (
               <button
                 key={loc}
                 onClick={() => handleSelect(loc)}
                 className={cn(
-                  'w-full flex items-center gap-2 px-3 py-2 text-sm transition-all',
-                  loc === locale
-                    ? 'bg-white/10 text-white'
-                    : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                  'dropdown-item',
+                  loc === locale && 'dropdown-item-active'
                 )}
               >
-                <span>{localeFlags[loc]}</span>
+                <span className="text-base">{localeFlags[loc]}</span>
                 <span className="flex-1 text-left">{localeNames[loc]}</span>
                 {loc === locale && <Check className="w-4 h-4 text-emerald-400" />}
               </button>

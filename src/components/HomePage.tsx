@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Trash2, Mic, Video, ChevronDown, ChevronUp, Loader2, Search, X, Download, Share2, RefreshCw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Trash2, Mic, Video, ChevronDown, ChevronUp, Loader2, Download, Share2, RefreshCw } from 'lucide-react';
 import { RecordingStudio } from '@/components/RecordingStudio';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useRecorder } from '@/hooks/useRecorder';
@@ -45,7 +45,6 @@ export function HomePage({ locale }: HomePageProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [blobUrls, setBlobUrls] = useState<Record<string, string>>({});
   const [loadingBlob, setLoadingBlob] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
   
   useEffect(() => {
     topicRef.current = topic;
@@ -95,26 +94,14 @@ export function HomePage({ locale }: HomePageProps) {
     recorder.startRecording(type, audioDeviceId, videoDeviceId);
   }, [recorder]);
 
-  // Filter recordings by search query
   // Helper to get display name for a recording
   const getDisplayName = (r: typeof recordings[0]) => 
     r.topic || `Recording ${new Date(r.createdAt).toLocaleString()}`;
 
-  const filteredRecordings = searchQuery.trim()
-    ? recordings.filter(r => 
-        getDisplayName(r).toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : recordings;
-
-  // Pagination (on filtered results)
-  const totalPages = Math.ceil(filteredRecordings.length / ITEMS_PER_PAGE);
+  // Pagination
+  const totalPages = Math.ceil(recordings.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedRecordings = filteredRecordings.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-
-  // Reset to page 1 when search changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery]);
+  const paginatedRecordings = recordings.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   // Toggle preview and load blob if needed
   const togglePreview = async (id: string) => {
@@ -229,23 +216,23 @@ export function HomePage({ locale }: HomePageProps) {
   }, [blobUrls, recordings, downloadFile]);
 
   return (
-    <main className="min-h-screen p-4 py-8">
+    <main className="min-h-screen p-4 py-6 md:py-8">
       {/* Background decorations */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-rose-500/20 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 -left-40 w-96 h-96 bg-violet-500/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 right-1/3 w-96 h-96 bg-amber-500/20 rounded-full blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-rose-500/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 -left-40 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 right-1/3 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl" />
       </div>
 
       {/* Content */}
       <div className="relative z-10 w-full max-w-4xl mx-auto">
         {/* Update notification */}
         {isUpdateAvailable && (
-          <div className="mb-4 flex items-center justify-between gap-3 px-4 py-2.5 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/30 rounded-xl">
-            <span className="text-sm text-blue-200">{t('pwa.updateAvailable')}</span>
+          <div className="mb-4 flex items-center justify-between gap-3 px-4 py-3 bg-blue-500/10 rounded-xl animate-fade-in">
+            <span className="text-sm text-blue-300">{t('pwa.updateAvailable')}</span>
             <button
               onClick={updateServiceWorker}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm font-medium bg-blue-500 hover:bg-blue-600 transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-500 hover:bg-blue-600 transition-colors"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               {t('pwa.update')}
@@ -253,15 +240,15 @@ export function HomePage({ locale }: HomePageProps) {
           </div>
         )}
 
-        {/* Header with language switcher */}
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            {/* Logo and slogan - baseline aligned */}
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4 flex-1 min-w-0">
+            {/* Logo and slogan */}
             <div className="flex items-baseline gap-3 min-w-0">
               <h1 className="text-2xl md:text-3xl font-bold tracking-tight shrink-0">
                 <span className="text-gradient">{t('app.title')}</span>
               </h1>
-              <span className="hidden sm:block text-sm text-slate-400 truncate">{t('topic.question')}</span>
+              <span className="hidden sm:block text-sm text-slate-500 truncate">{t('topic.question')}</span>
             </div>
             {/* PWA Install Button */}
             {isInstallable && (
@@ -269,9 +256,9 @@ export function HomePage({ locale }: HomePageProps) {
                 onClick={install}
                 className={cn(
                   'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium shrink-0',
-                  'bg-gradient-to-r from-emerald-500 to-teal-600',
-                  'hover:from-emerald-600 hover:to-teal-700',
-                  'transition-all hover:shadow-lg hover:shadow-emerald-500/25 active:scale-95'
+                  'bg-emerald-500/20 text-emerald-400',
+                  'hover:bg-emerald-500/30',
+                  'transition-colors active:scale-[0.98]'
                 )}
               >
                 <Download className="w-4 h-4" />
@@ -295,6 +282,8 @@ export function HomePage({ locale }: HomePageProps) {
             onResume={recorder.resumeRecording}
             onStop={recorder.stopRecording}
             onReset={recorder.resetRecording}
+            onSwitchAudioDevice={recorder.switchAudioDevice}
+            onSwitchVideoDevice={recorder.switchVideoDevice}
             topic={topic}
             onTopicChange={setTopic}
             recordingType={recorder.recordingType || 'video'}
@@ -305,12 +294,13 @@ export function HomePage({ locale }: HomePageProps) {
 
         {/* Recordings List */}
         {isHydrated && recordings.length > 0 && (
-          <div className="mt-6 relative z-0">
-            <div className="flex items-center justify-between gap-4 mb-3">
+          <div className="mt-8 relative z-0">
+            <div className="flex items-center justify-between gap-4 mb-4">
               <div className="flex items-center gap-3">
-                <h2 className="text-lg font-semibold text-slate-300">
-                  {t('recordings.title')} ({filteredRecordings.length})
+                <h2 className="text-lg font-semibold text-slate-200">
+                  {t('recordings.title')}
                 </h2>
+                <span className="text-sm text-slate-500">({recordings.length})</span>
                 {/* Clear all button */}
                 <button
                   onClick={() => {
@@ -318,64 +308,34 @@ export function HomePage({ locale }: HomePageProps) {
                       clearAllRecordings();
                     }
                   }}
-                  className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                  className="btn-ghost p-1.5"
                   title={t('recordings.clearAll')}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
-              
-              {/* Search box */}
-              <div className="relative flex-1 max-w-xs">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={t('recordings.search')}
-                  className={cn(
-                    'w-full pl-9 pr-8 py-1.5 rounded-lg text-sm',
-                    'bg-white/5 border border-white/10',
-                    'placeholder:text-slate-500 text-white',
-                    'focus:outline-none focus:ring-1 focus:ring-rose-500/50 focus:border-rose-500/50'
-                  )}
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-white/10"
-                  >
-                    <X className="w-3.5 h-3.5 text-slate-400" />
-                  </button>
-                )}
-              </div>
             </div>
             
-            {paginatedRecordings.length === 0 ? (
-              <div className="glass-card p-8 text-center text-slate-400">
-                {t('recordings.noResults')}
-              </div>
-            ) : (
-            <div className="space-y-2">
+            <div className="space-y-1">
               {paginatedRecordings.map((recording) => {
                 const isExpanded = expandedId === recording.id;
                 
                 return (
-                  <div key={recording.id} className="glass-card overflow-hidden">
+                  <div key={recording.id} className="card overflow-hidden">
                     {/* Recording row */}
                     <div
                       onClick={() => togglePreview(recording.id)}
                       className={cn(
-                        'px-4 py-2.5 flex items-center gap-3 cursor-pointer transition-all',
-                        isExpanded ? 'bg-white/5' : 'hover:bg-white/5'
+                        'px-4 py-3 flex items-center gap-3 cursor-pointer transition-colors',
+                        isExpanded ? 'bg-white/[0.04]' : 'hover:bg-white/[0.03]'
                       )}
                     >
                       {/* Type icon */}
                       <div className={cn(
-                        'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0',
+                        'w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0',
                         recording.type === 'video' 
-                          ? 'bg-violet-500/20' 
-                          : 'bg-rose-500/20'
+                          ? 'bg-violet-500/15' 
+                          : 'bg-rose-500/15'
                       )}>
                         {recording.type === 'video' ? (
                           <Video className="w-4 h-4 text-violet-400" />
@@ -386,67 +346,65 @@ export function HomePage({ locale }: HomePageProps) {
 
                       {/* Info */}
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-sm truncate">{getDisplayName(recording)}</h3>
-                        <p className="text-xs text-slate-500">{formatDate(recording.createdAt)}</p>
+                        <h3 className="font-medium text-sm text-slate-200 truncate">{getDisplayName(recording)}</h3>
+                        <p className="text-xs text-slate-500 mt-0.5">{formatDate(recording.createdAt)}</p>
                       </div>
 
                       {/* File info: size, extension, duration */}
-                      <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-slate-400">
+                      <div className="hidden sm:flex items-center gap-3 text-xs text-slate-500">
                         <span>{formatFileSize(recording.size || 0)}</span>
-                        <span className="text-slate-600">•</span>
-                        <span className="uppercase">{recording.format === 'mp4' ? (recording.type === 'video' ? 'mp4' : 'm4a') : 'webm'}</span>
-                        <span className="text-slate-600">•</span>
-                        <span>{formatDuration(recording.duration)}</span>
+                        <span className="uppercase text-slate-600">{recording.format === 'mp4' ? (recording.type === 'video' ? 'mp4' : 'm4a') : 'webm'}</span>
+                        <span className="font-mono">{formatDuration(recording.duration)}</span>
                       </div>
 
-                      {/* Share button */}
-                      <button
-                        onClick={(e) => handleShare(recording.id, getDisplayName(recording), e)}
-                        className="p-1.5 rounded-lg hover:bg-blue-500/20 hover:text-blue-400 transition-all"
-                        title={t('common.share')}
-                      >
-                        <Share2 className="w-4 h-4" />
-                      </button>
+                      {/* Actions */}
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={(e) => handleShare(recording.id, getDisplayName(recording), e)}
+                          className="btn-ghost p-2"
+                          title={t('common.share')}
+                        >
+                          <Share2 className="w-4 h-4" />
+                        </button>
 
-                      {/* Delete button */}
-                      <button
-                        onClick={(e) => handleDelete(recording.id, e)}
-                        className="p-1.5 rounded-lg hover:bg-red-500/20 hover:text-red-400 transition-all"
-                        title={t('common.delete')}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                        <button
+                          onClick={(e) => handleDelete(recording.id, e)}
+                          className="btn-ghost p-2 hover:text-red-400 hover:bg-red-500/10"
+                          title={t('common.delete')}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
 
-                      {/* Expand indicator */}
-                      <div className="p-0.5">
-                        {isExpanded ? (
-                          <ChevronUp className="w-4 h-4 text-slate-400" />
-                        ) : (
-                          <ChevronDown className="w-4 h-4 text-slate-400" />
-                        )}
+                        <div className="p-1.5 text-slate-500">
+                          {isExpanded ? (
+                            <ChevronUp className="w-4 h-4" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4" />
+                          )}
+                        </div>
                       </div>
                     </div>
 
                     {/* Inline preview */}
                     {isExpanded && (
-                      <div className="border-t border-white/10 p-4 bg-slate-900/30">
+                      <div className="p-4 bg-slate-950/50">
                         {loadingBlob === recording.id ? (
-                          <div className="flex items-center justify-center py-6">
-                            <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+                          <div className="flex items-center justify-center py-8">
+                            <Loader2 className="w-6 h-6 animate-spin text-slate-500" />
                           </div>
                         ) : !blobUrls[recording.id] ? (
-                          <div className="flex items-center justify-center py-6">
-                            <p className="text-slate-400 text-sm">{t('recordings.notFound')}</p>
+                          <div className="flex items-center justify-center py-8">
+                            <p className="text-slate-500 text-sm">{t('recordings.notFound')}</p>
                           </div>
                         ) : recording.type === 'video' ? (
                           <video
                             src={blobUrls[recording.id]}
                             controls
                             autoPlay
-                            className="w-full max-w-2xl mx-auto rounded-lg"
+                            className="w-full max-w-2xl mx-auto rounded-xl"
                           />
                         ) : (
-                          <div className="flex items-center justify-center py-2">
+                          <div className="flex items-center justify-center py-4">
                             <audio
                               src={blobUrls[recording.id]}
                               controls
@@ -460,20 +418,17 @@ export function HomePage({ locale }: HomePageProps) {
                   </div>
                 );
               })}
-            </div>
-            )}
+            </div>}
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 mt-4">
+              <div className="flex items-center justify-center gap-1 mt-4">
                 <button
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
                   className={cn(
-                    'p-1.5 rounded-lg transition-all',
-                    currentPage === 1
-                      ? 'bg-white/5 text-slate-500 cursor-not-allowed'
-                      : 'bg-white/10 hover:bg-white/20'
+                    'btn-ghost p-2',
+                    currentPage === 1 && 'opacity-30 cursor-not-allowed'
                   )}
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -485,10 +440,10 @@ export function HomePage({ locale }: HomePageProps) {
                       key={page}
                       onClick={() => setCurrentPage(page)}
                       className={cn(
-                        'w-8 h-8 rounded-lg text-sm font-medium transition-all',
+                        'w-8 h-8 rounded-lg text-sm font-medium transition-colors',
                         page === currentPage
-                          ? 'bg-gradient-to-r from-rose-500 to-pink-600'
-                          : 'bg-white/10 hover:bg-white/20'
+                          ? 'bg-white/10 text-white'
+                          : 'text-slate-500 hover:text-white hover:bg-white/[0.04]'
                       )}
                     >
                       {page}
@@ -500,10 +455,8 @@ export function HomePage({ locale }: HomePageProps) {
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
                   className={cn(
-                    'p-1.5 rounded-lg transition-all',
-                    currentPage === totalPages
-                      ? 'bg-white/5 text-slate-500 cursor-not-allowed'
-                      : 'bg-white/10 hover:bg-white/20'
+                    'btn-ghost p-2',
+                    currentPage === totalPages && 'opacity-30 cursor-not-allowed'
                   )}
                 >
                   <ChevronRight className="w-4 h-4" />
@@ -516,4 +469,3 @@ export function HomePage({ locale }: HomePageProps) {
     </main>
   );
 }
-
