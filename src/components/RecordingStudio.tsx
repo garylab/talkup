@@ -434,14 +434,18 @@ export function RecordingStudio({
                     <button
                       onClick={handleGetTopic}
                       disabled={isLoadingTopic}
-                      className="flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-md md:rounded-lg text-xs md:text-sm bg-white/10 hover:bg-white/20 transition-all"
+                      className={cn(
+                        'flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-md md:rounded-lg text-xs md:text-sm font-medium transition-all',
+                        'bg-gradient-to-r from-amber-400 to-orange-500 text-black hover:from-amber-500 hover:to-orange-600',
+                        'disabled:opacity-50 disabled:cursor-not-allowed'
+                      )}
                     >
                       <RefreshCcw className={cn('w-3.5 h-3.5 md:w-4 md:h-4', isLoadingTopic && 'animate-spin')} />
                       {t('topic.refresh')}
                     </button>
                     <button
                       onClick={() => setIsCreatingTopic(true)}
-                      className="flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-md md:rounded-lg text-xs md:text-sm bg-white/10 hover:bg-white/20 transition-all"
+                      className="flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-md md:rounded-lg text-xs md:text-sm font-medium bg-white/10 border border-white/20 hover:bg-white/20 transition-all"
                     >
                       <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" />
                       {t('topic.create')}

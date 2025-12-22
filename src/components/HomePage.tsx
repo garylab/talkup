@@ -238,10 +238,13 @@ export function HomePage({ locale }: HomePageProps) {
         {/* Header with language switcher */}
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight shrink-0">
-              <span className="text-gradient">{t('app.title')}</span>
-            </h1>
-            <span className="hidden sm:block text-sm text-slate-400 truncate">{t('topic.question')}</span>
+            {/* Logo and slogan - baseline aligned */}
+            <div className="flex items-baseline gap-3 min-w-0">
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight shrink-0">
+                <span className="text-gradient">{t('app.title')}</span>
+              </h1>
+              <span className="hidden sm:block text-sm text-slate-400 truncate">{t('topic.question')}</span>
+            </div>
             {/* PWA Install Button */}
             {isInstallable && (
               <button
