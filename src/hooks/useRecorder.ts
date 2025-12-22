@@ -4,10 +4,11 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import type { RecordingType } from '@/types';
 
 export type RecorderState = 'idle' | 'recording' | 'paused' | 'stopped';
+export type RecordingFormat = 'mp4' | 'webm';
 
 interface UseRecorderOptions {
   onDataAvailable?: (blob: Blob) => void;
-  onRecordingComplete?: (blob: Blob, url: string, duration: number) => void;
+  onRecordingComplete?: (blob: Blob, url: string, duration: number, format: RecordingFormat) => void;
 }
 
 interface UseRecorderReturn {
@@ -18,11 +19,46 @@ interface UseRecorderReturn {
   recordedUrl: string | null;
   error: string | null;
   recordingType: RecordingType | null;
+  recordingFormat: RecordingFormat | null;
   startRecording: (type: RecordingType, audioDeviceId?: string, videoDeviceId?: string) => Promise<void>;
   pauseRecording: () => void;
   resumeRecording: () => void;
   stopRecording: () => void;
   resetRecording: () => void;
+}
+
+// Detect if browser supports MP4 recording (Safari)
+function getBestCodec(type: RecordingType): { mimeType: string; format: RecordingFormat } {
+  if (type === 'video') {
+    // Try MP4/H.264 first (Safari, better iOS compatibility)
+    if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')) {
+      return { mimeType: 'video/mp4;codecs=avc1', format: 'mp4' };
+    }
+    if (MediaRecorder.isTypeSupported('video/mp4')) {
+      return { mimeType: 'video/mp4', format: 'mp4' };
+    }
+    // Fall back to WebM/VP9 (Chrome, Firefox, Edge)
+    if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+      return { mimeType: 'video/webm;codecs=vp9', format: 'webm' };
+    }
+    if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
+      return { mimeType: 'video/webm;codecs=vp8', format: 'webm' };
+    }
+    return { mimeType: 'video/webm', format: 'webm' };
+  } else {
+    // Audio: Try MP4/AAC first (Safari, iOS compatibility)
+    if (MediaRecorder.isTypeSupported('audio/mp4')) {
+      return { mimeType: 'audio/mp4', format: 'mp4' };
+    }
+    // Fall back to WebM/Opus (Chrome, Firefox, Edge)
+    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+      return { mimeType: 'audio/webm;codecs=opus', format: 'webm' };
+    }
+    if (MediaRecorder.isTypeSupported('audio/webm')) {
+      return { mimeType: 'audio/webm', format: 'webm' };
+    }
+    return { mimeType: '', format: 'webm' };
+  }
 }
 
 export function useRecorder({ onDataAvailable, onRecordingComplete }: UseRecorderOptions = {}): UseRecorderReturn {
@@ -33,6 +69,7 @@ export function useRecorder({ onDataAvailable, onRecordingComplete }: UseRecorde
   const [recordedUrl, setRecordedUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [recordingType, setRecordingType] = useState<RecordingType | null>(null);
+  const [recordingFormat, setRecordingFormat] = useState<RecordingFormat | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -40,6 +77,7 @@ export function useRecorder({ onDataAvailable, onRecordingComplete }: UseRecorde
   const startTimeRef = useRef<number>(0);
   const pausedDurationRef = useRef<number>(0);
   const finalDurationRef = useRef<number>(0);
+  const formatRef = useRef<RecordingFormat>('webm');
   const onRecordingCompleteRef = useRef(onRecordingComplete);
   
   // Keep the callback ref updated
@@ -100,11 +138,12 @@ export function useRecorder({ onDataAvailable, onRecordingComplete }: UseRecorde
         ? { deviceId: { exact: audioDeviceId } }
         : true;
       
+      // Use 720p for good balance of quality and file size
       const videoConstraints: MediaTrackConstraints | boolean = type === 'video'
         ? {
             ...(videoDeviceId ? { deviceId: { exact: videoDeviceId } } : { facingMode: 'user' }),
-            width: 1280,
-            height: 720,
+            width: { ideal: 1280, max: 1280 },
+            height: { ideal: 720, max: 720 },
           }
         : false;
 
@@ -116,33 +155,16 @@ export function useRecorder({ onDataAvailable, onRecordingComplete }: UseRecorde
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       setMediaStream(stream);
 
-      // Determine best supported mimeType
-      let mimeType: string;
-      if (type === 'video') {
-        mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') 
-          ? 'video/webm;codecs=vp9' 
-          : 'video/webm';
-      } else {
-        // For audio, try multiple formats for better browser compatibility
-        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-          mimeType = 'audio/webm;codecs=opus';
-        } else if (MediaRecorder.isTypeSupported('audio/webm')) {
-          mimeType = 'audio/webm';
-        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
-          mimeType = 'audio/mp4';
-        } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
-          mimeType = 'audio/ogg';
-        } else {
-          // Fallback - let browser choose
-          mimeType = '';
-        }
-      }
+      // Get best codec for this browser (MP4 for Safari, WebM for others)
+      const { mimeType, format } = getBestCodec(type);
+      formatRef.current = format;
+      setRecordingFormat(format);
 
       const options: MediaRecorderOptions = mimeType ? { mimeType } : {};
       const mediaRecorder = new MediaRecorder(stream, options);
       mediaRecorderRef.current = mediaRecorder;
 
-      const finalMimeType = mediaRecorder.mimeType || 'audio/webm';
+      const finalMimeType = mediaRecorder.mimeType || mimeType || 'video/webm';
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -156,8 +178,8 @@ export function useRecorder({ onDataAvailable, onRecordingComplete }: UseRecorde
         const url = URL.createObjectURL(blob);
         setRecordedUrl(url);
         onDataAvailable?.(blob);
-        // Auto-save callback
-        onRecordingCompleteRef.current?.(blob, url, finalDurationRef.current);
+        // Auto-save callback with format info
+        onRecordingCompleteRef.current?.(blob, url, finalDurationRef.current, formatRef.current);
       };
 
       mediaRecorder.start(1000); // Collect data every second
@@ -213,6 +235,7 @@ export function useRecorder({ onDataAvailable, onRecordingComplete }: UseRecorde
     setState('idle');
     setError(null);
     setRecordingType(null);
+    setRecordingFormat(null);
     chunksRef.current = [];
     pausedDurationRef.current = 0;
   }, [mediaStream, recordedUrl]);
@@ -225,6 +248,7 @@ export function useRecorder({ onDataAvailable, onRecordingComplete }: UseRecorde
     recordedUrl,
     error,
     recordingType,
+    recordingFormat,
     startRecording,
     pauseRecording,
     resumeRecording,

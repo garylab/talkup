@@ -49,6 +49,7 @@ export interface LocalRecording {
   topic: string | null;
   topicCategory: string | null;
   type: 'video' | 'audio';
+  format: 'mp4' | 'webm';
   duration: number;
   createdAt: string;
   synced: boolean;
@@ -60,6 +61,7 @@ export interface AddRecordingInput {
   topic: string | null;
   topicCategory: string | null;
   type: 'video' | 'audio';
+  format: 'mp4' | 'webm';
   duration: number;
   blob: Blob;
 }
@@ -79,6 +81,7 @@ export function useLocalRecordings() {
       topic: input.topic,
       topicCategory: input.topicCategory,
       type: input.type,
+      format: input.format,
       duration: input.duration,
       createdAt: new Date().toISOString(),
       synced: false,

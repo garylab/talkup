@@ -502,38 +502,10 @@ export function RecordingStudio({
         )}
 
         {/* Controls */}
-        <div className="flex items-center justify-between gap-2 md:gap-3">
+        <div className="flex items-center justify-center gap-2 md:gap-3">
             {isIdle && (
               <>
-                {/* Mode Switch - Left */}
-                <div className="flex items-center bg-white/5 rounded-lg md:rounded-xl p-0.5 md:p-1 border border-white/10">
-                  <button
-                    onClick={() => setRecordMode('video')}
-                    className={cn(
-                      'p-1.5 md:p-2 rounded-md md:rounded-lg transition-all',
-                      recordMode === 'video'
-                        ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-md'
-                        : 'text-slate-400 hover:text-white hover:bg-white/10'
-                    )}
-                    title={t('recording.video')}
-                  >
-                    <Video className="w-4 h-4 md:w-5 md:h-5" />
-                  </button>
-                  <button
-                    onClick={() => setRecordMode('audio')}
-                    className={cn(
-                      'p-1.5 md:p-2 rounded-md md:rounded-lg transition-all',
-                      recordMode === 'audio'
-                        ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-md'
-                        : 'text-slate-400 hover:text-white hover:bg-white/10'
-                    )}
-                    title={t('recording.audio')}
-                  >
-                    <Mic className="w-4 h-4 md:w-5 md:h-5" />
-                  </button>
-                </div>
-
-                {/* Start Button - Center */}
+                {/* Start Button */}
                 <button
                   onClick={handleStart}
                   disabled={!topic}
@@ -550,7 +522,7 @@ export function RecordingStudio({
                   {t('recording.start')}
                 </button>
 
-                {/* Settings Button - Right */}
+                {/* Settings Button */}
                 <button
                   onClick={toggleSettings}
                   className="p-2 md:p-2.5 rounded-lg md:rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
@@ -641,6 +613,39 @@ export function RecordingStudio({
             </div>
             
             <div className="p-4 space-y-4">
+              {/* Recording Mode */}
+              <div>
+                <label className="block text-sm text-slate-400 mb-2">
+                  {t('settings.mode')}
+                </label>
+                <div className="flex items-center bg-white/5 rounded-lg p-1 border border-white/10">
+                  <button
+                    onClick={() => setRecordMode('video')}
+                    className={cn(
+                      'flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all',
+                      recordMode === 'video'
+                        ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-md'
+                        : 'text-slate-400 hover:text-white hover:bg-white/10'
+                    )}
+                  >
+                    <Video className="w-4 h-4" />
+                    {t('recording.video')}
+                  </button>
+                  <button
+                    onClick={() => setRecordMode('audio')}
+                    className={cn(
+                      'flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all',
+                      recordMode === 'audio'
+                        ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-md'
+                        : 'text-slate-400 hover:text-white hover:bg-white/10'
+                    )}
+                  >
+                    <Mic className="w-4 h-4" />
+                    {t('recording.audio')}
+                  </button>
+                </div>
+              </div>
+
               {/* Microphone Selection */}
               <div>
                 <label className="block text-sm text-slate-400 mb-2">
@@ -669,33 +674,35 @@ export function RecordingStudio({
                 </select>
               </div>
 
-              {/* Camera Selection */}
-              <div>
-                <label className="block text-sm text-slate-400 mb-2">
-                  <Video className="w-4 h-4 inline mr-2" />
-                  {t('settings.camera')}
-                </label>
-                <select
-                  value={selectedVideoDevice}
-                  onChange={(e) => setSelectedVideoDevice(e.target.value)}
-                  className={cn(
-                    'w-full px-3 py-2 rounded-lg text-sm',
-                    'bg-white/10 border border-white/20 text-white',
-                    'focus:outline-none focus:ring-2 focus:ring-violet-500/50',
-                    'cursor-pointer'
-                  )}
-                >
-                  {videoDevices.length === 0 ? (
-                    <option value="">{t('settings.noDevices')}</option>
-                  ) : (
-                    videoDevices.map((device) => (
-                      <option key={device.deviceId} value={device.deviceId} className="bg-slate-800">
-                        {device.label}
-                      </option>
-                    ))
-                  )}
-                </select>
-              </div>
+              {/* Camera Selection (only shown when video mode) */}
+              {recordMode === 'video' && (
+                <div>
+                  <label className="block text-sm text-slate-400 mb-2">
+                    <Video className="w-4 h-4 inline mr-2" />
+                    {t('settings.camera')}
+                  </label>
+                  <select
+                    value={selectedVideoDevice}
+                    onChange={(e) => setSelectedVideoDevice(e.target.value)}
+                    className={cn(
+                      'w-full px-3 py-2 rounded-lg text-sm',
+                      'bg-white/10 border border-white/20 text-white',
+                      'focus:outline-none focus:ring-2 focus:ring-violet-500/50',
+                      'cursor-pointer'
+                    )}
+                  >
+                    {videoDevices.length === 0 ? (
+                      <option value="">{t('settings.noDevices')}</option>
+                    ) : (
+                      videoDevices.map((device) => (
+                        <option key={device.deviceId} value={device.deviceId} className="bg-slate-800">
+                          {device.label}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+              )}
             </div>
           </div>
         </div>

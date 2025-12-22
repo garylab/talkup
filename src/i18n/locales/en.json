@@ -28,6 +28,7 @@
   },
   "settings": {
     "title": "Settings",
+    "mode": "Recording Mode",
     "microphone": "Microphone",
     "camera": "Camera",
     "selectMicrophone": "Select microphone",
@@ -42,7 +43,11 @@
     "deleteConfirm": "Delete this recording?"
   },
   "common": {
-    "delete": "Delete"
+    "delete": "Delete",
+    "share": "Share"
+  },
+  "pwa": {
+    "install": "Install App"
   }
 }
 

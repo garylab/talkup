@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Trash2, Mic, Video, ChevronDown, ChevronUp, Loader2, Search, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Trash2, Mic, Video, ChevronDown, ChevronUp, Loader2, Search, X, Download, Share2 } from 'lucide-react';
 import { RecordingStudio } from '@/components/RecordingStudio';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useRecorder } from '@/hooks/useRecorder';
 import { useLocalRecordings } from '@/hooks/useLocalStorage';
+import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { getBlobUrl } from '@/lib/indexedDB';
 import { cn, formatDuration, formatDate } from '@/lib/utils';
 import { t as translate, getTopics, Locale } from '@/i18n';
@@ -27,6 +28,9 @@ export function HomePage({ locale }: HomePageProps) {
   
   // Local storage
   const { recordings, addRecording, removeRecording } = useLocalRecordings();
+
+  // PWA install
+  const { isInstallable, install } = usePWAInstall();
 
   // Use refs to track values for the callback
   const topicRef = useRef(topic);
@@ -56,7 +60,7 @@ export function HomePage({ locale }: HomePageProps) {
   }, [blobUrls]);
 
   // Auto-save when recording completes
-  const handleRecordingComplete = useCallback(async (blob: Blob, url: string, duration: number) => {
+  const handleRecordingComplete = useCallback(async (blob: Blob, url: string, duration: number, format: 'mp4' | 'webm') => {
     const currentTopic = topicRef.current;
     const currentType = recordingTypeRef.current;
     const title = currentTopic || `Recording ${new Date().toLocaleString()}`;
@@ -66,6 +70,7 @@ export function HomePage({ locale }: HomePageProps) {
       topic: currentTopic,
       topicCategory: null,
       type: currentType,
+      format,
       duration,
       blob,
     });
@@ -156,6 +161,74 @@ export function HomePage({ locale }: HomePageProps) {
     }
   }, [removeRecording, paginatedRecordings.length, currentPage, expandedId, t]);
 
+  // Download file helper
+  const downloadFile = useCallback((url: string, filename: string) => {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }, []);
+
+  // Share recording
+  const handleShare = useCallback(async (id: string, title: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    
+    try {
+      // Get the blob URL if not already loaded
+      let url = blobUrls[id];
+      if (!url) {
+        url = await getBlobUrl(id) || '';
+      }
+      
+      if (!url) {
+        console.error('No blob URL available for sharing');
+        return;
+      }
+
+      const recording = recordings.find(r => r.id === id);
+      const isVideo = recording?.type === 'video';
+      const format = recording?.format || 'webm';
+      const extension = format === 'mp4' ? (isVideo ? 'mp4' : 'm4a') : 'webm';
+      const mimeType = format === 'mp4' 
+        ? (isVideo ? 'video/mp4' : 'audio/mp4')
+        : (isVideo ? 'video/webm' : 'audio/webm');
+      const filename = `${title}.${extension}`;
+
+      // Fetch the blob to create a file
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const file = new File([blob], filename, { type: mimeType });
+
+      // Check if Web Share API with files is supported
+      const canShareFiles = navigator.canShare && navigator.canShare({ files: [file] });
+      
+      if (canShareFiles) {
+        try {
+          await navigator.share({
+            title: title,
+            files: [file],
+          });
+          return; // Success
+        } catch (shareError) {
+          // User cancelled or share failed - fall through to download
+          if ((shareError as Error).name === 'AbortError') {
+            return; // User cancelled, don't download
+          }
+          console.log('Share failed, falling back to download');
+        }
+      }
+
+      // Fallback: download the file
+      const downloadUrl = URL.createObjectURL(blob);
+      downloadFile(downloadUrl, filename);
+      URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Share/Download failed:', error);
+    }
+  }, [blobUrls, recordings, downloadFile]);
+
   return (
     <main className="min-h-screen p-4 py-8">
       {/* Background decorations */}
@@ -169,15 +242,27 @@ export function HomePage({ locale }: HomePageProps) {
       <div className="relative z-10 w-full max-w-4xl mx-auto">
         {/* Header with language switcher */}
         <div className="flex items-center justify-between mb-5">
-          <div className="flex-1" />
-          <div className="text-center flex-1">
+          <div className="flex items-center gap-3">
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
               <span className="text-gradient">{t('app.title')}</span>
             </h1>
+            {/* PWA Install Button */}
+            {isInstallable && (
+              <button
+                onClick={install}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium',
+                  'bg-gradient-to-r from-emerald-500 to-teal-600',
+                  'hover:from-emerald-600 hover:to-teal-700',
+                  'transition-all hover:shadow-lg hover:shadow-emerald-500/25 active:scale-95'
+                )}
+              >
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:inline">{t('pwa.install')}</span>
+              </button>
+            )}
           </div>
-          <div className="flex-1 flex justify-end">
-            <LanguageSwitcher locale={locale} />
-          </div>
+          <LanguageSwitcher locale={locale} />
         </div>
 
         {/* Recording Studio */}
@@ -276,6 +361,15 @@ export function HomePage({ locale }: HomePageProps) {
                       <div className="hidden sm:block text-xs font-mono text-slate-400">
                         {formatDuration(recording.duration)}
                       </div>
+
+                      {/* Share button */}
+                      <button
+                        onClick={(e) => handleShare(recording.id, recording.title, e)}
+                        className="p-1.5 rounded-lg hover:bg-blue-500/20 hover:text-blue-400 transition-all"
+                        title={t('common.share')}
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </button>
 
                       {/* Delete button */}
                       <button

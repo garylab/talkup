@@ -28,6 +28,7 @@
   },
   "settings": {
     "title": "设置",
+    "mode": "录制模式",
     "microphone": "麦克风",
     "camera": "摄像头",
     "selectMicrophone": "选择麦克风",
@@ -42,7 +43,11 @@
     "deleteConfirm": "确定删除这个录制吗？"
   },
   "common": {
-    "delete": "删除"
+    "delete": "删除",
+    "share": "分享"
+  },
+  "pwa": {
+    "install": "安装应用"
   }
 }
 
