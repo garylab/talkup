@@ -732,6 +732,19 @@ export function RecordingStudio({
                   </select>
                 </div>
               )}
+
+              {/* Save Button */}
+              <button
+                onClick={() => setShowSettings(false)}
+                className={cn(
+                  'w-full mt-2 py-2.5 rounded-lg font-medium text-sm',
+                  'bg-gradient-to-r from-emerald-500 to-teal-600',
+                  'hover:from-emerald-600 hover:to-teal-700',
+                  'transition-all hover:shadow-lg hover:shadow-emerald-500/25 active:scale-[0.98]'
+                )}
+              >
+                {t('settings.save')}
+              </button>
             </div>
           </div>
         </div>

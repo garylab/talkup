@@ -25,7 +25,7 @@ function openDB(): Promise<IDBDatabase> {
       };
 
       request.onsuccess = () => {
-        console.log('[IndexedDB] Opened successfully');
+        console.log('[IndexedDB] Opened');
         resolve(request.result);
       };
 
@@ -50,54 +50,61 @@ function openDB(): Promise<IDBDatabase> {
   return dbPromise;
 }
 
-// Helper to convert Blob to ArrayBuffer
-function blobToArrayBuffer(blob: Blob): Promise<ArrayBuffer> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as ArrayBuffer);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsArrayBuffer(blob);
-  });
-}
-
 // ============ Blob Operations ============
 
 export async function saveBlob(id: string, blob: Blob): Promise<void> {
-  console.log(`[IndexedDB] Saving: ${id}, size: ${blob.size}`);
+  console.log(`[IndexedDB] Saving: ${id}, size: ${blob.size}, type: ${blob.type}`);
   
-  // IMPORTANT: Convert blob to ArrayBuffer BEFORE opening transaction
-  // This prevents the transaction from closing while reading
-  const arrayBuffer = await blobToArrayBuffer(blob);
-  console.log(`[IndexedDB] Converted to ArrayBuffer: ${arrayBuffer.byteLength} bytes`);
+  // Step 1: Convert blob to ArrayBuffer BEFORE opening transaction
+  // This is critical - the transaction will close if we do async work after opening it
+  let arrayBuffer: ArrayBuffer;
+  try {
+    // Modern browsers support blob.arrayBuffer()
+    arrayBuffer = await blob.arrayBuffer();
+    console.log(`[IndexedDB] Converted to ArrayBuffer: ${arrayBuffer.byteLength} bytes`);
+  } catch (error) {
+    console.error(`[IndexedDB] Failed to convert blob:`, error);
+    throw error;
+  }
   
+  // Step 2: Open database
   const db = await openDB();
   
+  // Step 3: Store in IndexedDB with proper transaction handling
   return new Promise((resolve, reject) => {
     try {
       const transaction = db.transaction(BLOBS_STORE, 'readwrite');
       const store = transaction.objectStore(BLOBS_STORE);
       
-      // Store ArrayBuffer (works better on iOS than Blob)
-      const request = store.put({ 
+      const data = { 
         id, 
         arrayBuffer,
         type: blob.type,
         size: blob.size
-      });
-
-      request.onerror = () => {
-        console.error(`[IndexedDB] Save failed: ${id}`, request.error);
-        reject(request.error);
       };
+      
+      const request = store.put(data);
 
-      request.onsuccess = () => {
+      // IMPORTANT: Wait for transaction.oncomplete, not just request.onsuccess
+      // This ensures data is fully committed to disk (critical for iOS!)
+      transaction.oncomplete = () => {
         console.log(`[IndexedDB] Saved: ${id}`);
         resolve();
       };
-      
+
       transaction.onerror = () => {
         console.error(`[IndexedDB] Transaction error:`, transaction.error);
         reject(transaction.error);
+      };
+      
+      transaction.onabort = () => {
+        console.error(`[IndexedDB] Transaction aborted`);
+        reject(new Error('Transaction aborted'));
+      };
+
+      request.onerror = () => {
+        console.error(`[IndexedDB] Put error:`, request.error);
+        // Don't reject here - let transaction.onerror handle it
       };
     } catch (error) {
       console.error(`[IndexedDB] Error in saveBlob:`, error);
@@ -117,11 +124,6 @@ export async function getBlob(id: string): Promise<Blob | null> {
       const store = transaction.objectStore(BLOBS_STORE);
       const request = store.get(id);
 
-      request.onerror = () => {
-        console.error(`[IndexedDB] Get failed: ${id}`, request.error);
-        reject(request.error);
-      };
-
       request.onsuccess = () => {
         const result = request.result;
         if (!result) {
@@ -132,23 +134,52 @@ export async function getBlob(id: string): Promise<Blob | null> {
 
         // Reconstruct blob from ArrayBuffer
         if (result.arrayBuffer) {
-          console.log(`[IndexedDB] Reconstructing: ${id}, size: ${result.size}`);
-          const blob = new Blob([result.arrayBuffer], { 
-            type: result.type || 'application/octet-stream' 
-          });
-          resolve(blob);
+          try {
+            const blob = new Blob([result.arrayBuffer], { 
+              type: result.type || 'application/octet-stream' 
+            });
+            console.log(`[IndexedDB] Retrieved: ${id}, size: ${blob.size}`);
+            resolve(blob);
+          } catch (e) {
+            console.error(`[IndexedDB] Failed to reconstruct blob:`, e);
+            resolve(null);
+          }
           return;
         }
 
-        // Legacy: try direct blob (might not work on iOS)
+        // Legacy fallback: direct blob
         if (result.blob instanceof Blob) {
-          console.log(`[IndexedDB] Direct blob: ${id}`);
+          console.log(`[IndexedDB] Retrieved direct blob: ${id}`);
           resolve(result.blob);
           return;
         }
 
-        console.warn(`[IndexedDB] No valid data: ${id}`);
+        // Legacy fallback: base64
+        if (result.base64) {
+          try {
+            const byteString = atob(result.base64.split(',')[1]);
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteString.length; i++) {
+              ia[i] = byteString.charCodeAt(i);
+            }
+            const blob = new Blob([ab], { type: result.type || 'application/octet-stream' });
+            console.log(`[IndexedDB] Retrieved from base64: ${id}`);
+            resolve(blob);
+          } catch (e) {
+            console.error(`[IndexedDB] Failed to convert base64:`, e);
+            resolve(null);
+          }
+          return;
+        }
+
+        console.warn(`[IndexedDB] No valid data for: ${id}`);
         resolve(null);
+      };
+
+      request.onerror = () => {
+        console.error(`[IndexedDB] Get error:`, request.error);
+        reject(request.error);
       };
     } catch (error) {
       console.error(`[IndexedDB] Error in getBlob:`, error);
@@ -166,16 +197,16 @@ export async function deleteBlob(id: string): Promise<void> {
     try {
       const transaction = db.transaction(BLOBS_STORE, 'readwrite');
       const store = transaction.objectStore(BLOBS_STORE);
-      const request = store.delete(id);
+      store.delete(id);
 
-      request.onerror = () => {
-        console.error(`[IndexedDB] Delete failed: ${id}`, request.error);
-        reject(request.error);
-      };
-
-      request.onsuccess = () => {
+      transaction.oncomplete = () => {
         console.log(`[IndexedDB] Deleted: ${id}`);
         resolve();
+      };
+
+      transaction.onerror = () => {
+        console.error(`[IndexedDB] Delete error:`, transaction.error);
+        reject(transaction.error);
       };
     } catch (error) {
       console.error(`[IndexedDB] Error in deleteBlob:`, error);

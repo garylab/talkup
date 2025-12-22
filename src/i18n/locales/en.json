@@ -33,7 +33,8 @@
     "camera": "Camera",
     "selectMicrophone": "Select microphone",
     "selectCamera": "Select camera",
-    "noDevices": "No devices found"
+    "noDevices": "No devices found",
+    "save": "Save"
   },
   "recordings": {
     "title": "Recordings",

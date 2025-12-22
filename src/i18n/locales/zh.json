@@ -33,7 +33,8 @@
     "camera": "摄像头",
     "selectMicrophone": "选择麦克风",
     "selectCamera": "选择摄像头",
-    "noDevices": "未找到设备"
+    "noDevices": "未找到设备",
+    "save": "保存"
   },
   "recordings": {
     "title": "录制历史",
