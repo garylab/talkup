@@ -40,7 +40,9 @@
     "search": "搜索录制...",
     "noResults": "未找到录制",
     "notFound": "无法加载录制",
-    "deleteConfirm": "确定删除这个录制吗？"
+    "deleteConfirm": "确定删除这个录制吗？",
+    "clearAll": "清空全部",
+    "clearAllConfirm": "删除所有录制？此操作无法撤销。"
   },
   "common": {
     "delete": "删除",

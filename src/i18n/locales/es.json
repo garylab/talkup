@@ -40,7 +40,9 @@
     "search": "Buscar grabaciones...",
     "noResults": "No se encontraron grabaciones",
     "notFound": "Grabación no encontrada",
-    "deleteConfirm": "¿Eliminar esta grabación?"
+    "deleteConfirm": "¿Eliminar esta grabación?",
+    "clearAll": "Borrar todo",
+    "clearAllConfirm": "¿Eliminar todas las grabaciones? Esto no se puede deshacer."
   },
   "common": {
     "delete": "Eliminar",

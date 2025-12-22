@@ -27,7 +27,7 @@ export function HomePage({ locale }: HomePageProps) {
   const [topic, setTopic] = useState<string | null>(null);
   
   // Local storage (metadata in localStorage, blobs in IndexedDB)
-  const { recordings, isHydrated, addRecording, removeRecording } = useLocalRecordings();
+  const { recordings, isHydrated, addRecording, removeRecording, clearAllRecordings } = useLocalRecordings();
 
   // PWA install
   const { isInstallable, install } = usePWAInstall();
@@ -289,9 +289,23 @@ export function HomePage({ locale }: HomePageProps) {
         {isHydrated && recordings.length > 0 && (
           <div className="mt-6 relative z-0">
             <div className="flex items-center justify-between gap-4 mb-3">
-              <h2 className="text-lg font-semibold text-slate-300">
-                {t('recordings.title')} ({filteredRecordings.length})
-              </h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-lg font-semibold text-slate-300">
+                  {t('recordings.title')} ({filteredRecordings.length})
+                </h2>
+                {/* Clear all button */}
+                <button
+                  onClick={() => {
+                    if (window.confirm(t('recordings.clearAllConfirm'))) {
+                      clearAllRecordings();
+                    }
+                  }}
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                  title={t('recordings.clearAll')}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
               
               {/* Search box */}
               <div className="relative flex-1 max-w-xs">

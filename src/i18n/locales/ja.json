@@ -40,7 +40,9 @@
     "search": "録画を検索...",
     "noResults": "録画が見つかりません",
     "notFound": "録画が見つかりません",
-    "deleteConfirm": "この録画を削除しますか？"
+    "deleteConfirm": "この録画を削除しますか？",
+    "clearAll": "すべて削除",
+    "clearAllConfirm": "すべての録画を削除しますか？この操作は元に戻せません。"
   },
   "common": {
     "delete": "削除",

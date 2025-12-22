@@ -110,10 +110,26 @@ export function useLocalRecordings() {
     setRecordings((prev) => prev.filter((r) => r.id !== id));
   }, [setRecordings]);
 
+  const clearAllRecordings = useCallback(async () => {
+    // Delete all blobs
+    for (const recording of recordings) {
+      try {
+        await deleteBlob(recording.id);
+        console.log(`[clearAllRecordings] Blob deleted: ${recording.id}`);
+      } catch (error) {
+        console.error(`[clearAllRecordings] Failed to delete blob ${recording.id}:`, error);
+      }
+    }
+    // Clear the list
+    setRecordings([]);
+    console.log(`[clearAllRecordings] All recordings cleared`);
+  }, [recordings, setRecordings]);
+
   return {
     recordings,
     isHydrated,
     addRecording,
     removeRecording,
+    clearAllRecordings,
   };
 }

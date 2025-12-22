@@ -40,7 +40,9 @@
     "search": "Search recordings...",
     "noResults": "No recordings found",
     "notFound": "Recording not found",
-    "deleteConfirm": "Delete this recording?"
+    "deleteConfirm": "Delete this recording?",
+    "clearAll": "Clear all",
+    "clearAllConfirm": "Delete all recordings? This cannot be undone."
   },
   "common": {
     "delete": "Delete",

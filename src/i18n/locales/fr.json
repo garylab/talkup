@@ -40,7 +40,9 @@
     "search": "Rechercher...",
     "noResults": "Aucun enregistrement trouvé",
     "notFound": "Enregistrement introuvable",
-    "deleteConfirm": "Supprimer cet enregistrement ?"
+    "deleteConfirm": "Supprimer cet enregistrement ?",
+    "clearAll": "Tout effacer",
+    "clearAllConfirm": "Supprimer tous les enregistrements ? Cette action est irréversible."
   },
   "common": {
     "delete": "Supprimer",

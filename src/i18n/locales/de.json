@@ -40,7 +40,9 @@
     "search": "Aufnahmen suchen...",
     "noResults": "Keine Aufnahmen gefunden",
     "notFound": "Aufnahme nicht gefunden",
-    "deleteConfirm": "Diese Aufnahme löschen?"
+    "deleteConfirm": "Diese Aufnahme löschen?",
+    "clearAll": "Alle löschen",
+    "clearAllConfirm": "Alle Aufnahmen löschen? Dies kann nicht rückgängig gemacht werden."
   },
   "common": {
     "delete": "Löschen",
