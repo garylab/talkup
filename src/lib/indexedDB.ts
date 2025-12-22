@@ -10,7 +10,6 @@ function openDB(): Promise<IDBDatabase> {
   if (dbPromise) return dbPromise;
 
   dbPromise = new Promise((resolve, reject) => {
-    // Check if IndexedDB is available
     if (typeof indexedDB === 'undefined') {
       reject(new Error('IndexedDB is not available'));
       return;
@@ -20,33 +19,29 @@ function openDB(): Promise<IDBDatabase> {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
 
       request.onerror = () => {
-        console.error('[IndexedDB] Failed to open database:', request.error);
-        dbPromise = null; // Reset so we can retry
+        console.error('[IndexedDB] Failed to open:', request.error);
+        dbPromise = null;
         reject(request.error);
       };
 
       request.onsuccess = () => {
-        console.log('[IndexedDB] Database opened successfully');
+        console.log('[IndexedDB] Opened successfully');
         resolve(request.result);
       };
 
       request.onupgradeneeded = (event) => {
-        console.log('[IndexedDB] Upgrading database...');
+        console.log('[IndexedDB] Upgrading...');
         const db = (event.target as IDBOpenDBRequest).result;
-        
-        // Create blobs store for binary data only
         if (!db.objectStoreNames.contains(BLOBS_STORE)) {
           db.createObjectStore(BLOBS_STORE, { keyPath: 'id' });
-          console.log('[IndexedDB] Created blobs store');
         }
       };
 
-      // Handle blocked (another tab has the db open with old version)
       request.onblocked = () => {
-        console.warn('[IndexedDB] Database blocked - close other tabs');
+        console.warn('[IndexedDB] Blocked - close other tabs');
       };
     } catch (error) {
-      console.error('[IndexedDB] Error opening database:', error);
+      console.error('[IndexedDB] Error:', error);
       dbPromise = null;
       reject(error);
     }
@@ -55,10 +50,25 @@ function openDB(): Promise<IDBDatabase> {
   return dbPromise;
 }
 
+// Helper to convert Blob to ArrayBuffer
+function blobToArrayBuffer(blob: Blob): Promise<ArrayBuffer> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as ArrayBuffer);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsArrayBuffer(blob);
+  });
+}
+
 // ============ Blob Operations ============
 
 export async function saveBlob(id: string, blob: Blob): Promise<void> {
-  console.log(`[IndexedDB] Saving blob: ${id}, size: ${blob.size}, type: ${blob.type}`);
+  console.log(`[IndexedDB] Saving: ${id}, size: ${blob.size}`);
+  
+  // IMPORTANT: Convert blob to ArrayBuffer BEFORE opening transaction
+  // This prevents the transaction from closing while reading
+  const arrayBuffer = await blobToArrayBuffer(blob);
+  console.log(`[IndexedDB] Converted to ArrayBuffer: ${arrayBuffer.byteLength} bytes`);
   
   const db = await openDB();
   
@@ -67,40 +77,23 @@ export async function saveBlob(id: string, blob: Blob): Promise<void> {
       const transaction = db.transaction(BLOBS_STORE, 'readwrite');
       const store = transaction.objectStore(BLOBS_STORE);
       
-      // For iOS compatibility, convert blob to ArrayBuffer if needed
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          const request = store.put({ 
-            id, 
-            blob,
-            // Store as ArrayBuffer backup for iOS compatibility
-            arrayBuffer: reader.result,
-            type: blob.type,
-            size: blob.size
-          });
+      // Store ArrayBuffer (works better on iOS than Blob)
+      const request = store.put({ 
+        id, 
+        arrayBuffer,
+        type: blob.type,
+        size: blob.size
+      });
 
-          request.onerror = () => {
-            console.error(`[IndexedDB] Failed to save blob ${id}:`, request.error);
-            reject(request.error);
-          };
+      request.onerror = () => {
+        console.error(`[IndexedDB] Save failed: ${id}`, request.error);
+        reject(request.error);
+      };
 
-          request.onsuccess = () => {
-            console.log(`[IndexedDB] Blob saved successfully: ${id}`);
-            resolve();
-          };
-        } catch (error) {
-          console.error(`[IndexedDB] Error in put operation:`, error);
-          reject(error);
-        }
+      request.onsuccess = () => {
+        console.log(`[IndexedDB] Saved: ${id}`);
+        resolve();
       };
-      
-      reader.onerror = () => {
-        console.error(`[IndexedDB] Failed to read blob:`, reader.error);
-        reject(reader.error);
-      };
-      
-      reader.readAsArrayBuffer(blob);
       
       transaction.onerror = () => {
         console.error(`[IndexedDB] Transaction error:`, transaction.error);
@@ -114,7 +107,7 @@ export async function saveBlob(id: string, blob: Blob): Promise<void> {
 }
 
 export async function getBlob(id: string): Promise<Blob | null> {
-  console.log(`[IndexedDB] Getting blob: ${id}`);
+  console.log(`[IndexedDB] Getting: ${id}`);
   
   const db = await openDB();
   
@@ -125,34 +118,36 @@ export async function getBlob(id: string): Promise<Blob | null> {
       const request = store.get(id);
 
       request.onerror = () => {
-        console.error(`[IndexedDB] Failed to get blob ${id}:`, request.error);
+        console.error(`[IndexedDB] Get failed: ${id}`, request.error);
         reject(request.error);
       };
 
       request.onsuccess = () => {
         const result = request.result;
         if (!result) {
-          console.log(`[IndexedDB] Blob not found: ${id}`);
+          console.log(`[IndexedDB] Not found: ${id}`);
           resolve(null);
           return;
         }
 
-        // Try to get blob directly first
-        if (result.blob instanceof Blob) {
-          console.log(`[IndexedDB] Retrieved blob: ${id}`);
-          resolve(result.blob);
-          return;
-        }
-
-        // Fallback: reconstruct from ArrayBuffer (iOS compatibility)
+        // Reconstruct blob from ArrayBuffer
         if (result.arrayBuffer) {
-          console.log(`[IndexedDB] Reconstructing blob from ArrayBuffer: ${id}`);
-          const blob = new Blob([result.arrayBuffer], { type: result.type || 'application/octet-stream' });
+          console.log(`[IndexedDB] Reconstructing: ${id}, size: ${result.size}`);
+          const blob = new Blob([result.arrayBuffer], { 
+            type: result.type || 'application/octet-stream' 
+          });
           resolve(blob);
           return;
         }
 
-        console.warn(`[IndexedDB] No valid blob data found for: ${id}`);
+        // Legacy: try direct blob (might not work on iOS)
+        if (result.blob instanceof Blob) {
+          console.log(`[IndexedDB] Direct blob: ${id}`);
+          resolve(result.blob);
+          return;
+        }
+
+        console.warn(`[IndexedDB] No valid data: ${id}`);
         resolve(null);
       };
     } catch (error) {
@@ -163,7 +158,7 @@ export async function getBlob(id: string): Promise<Blob | null> {
 }
 
 export async function deleteBlob(id: string): Promise<void> {
-  console.log(`[IndexedDB] Deleting blob: ${id}`);
+  console.log(`[IndexedDB] Deleting: ${id}`);
   
   const db = await openDB();
   
@@ -174,12 +169,12 @@ export async function deleteBlob(id: string): Promise<void> {
       const request = store.delete(id);
 
       request.onerror = () => {
-        console.error(`[IndexedDB] Failed to delete blob ${id}:`, request.error);
+        console.error(`[IndexedDB] Delete failed: ${id}`, request.error);
         reject(request.error);
       };
 
       request.onsuccess = () => {
-        console.log(`[IndexedDB] Blob deleted: ${id}`);
+        console.log(`[IndexedDB] Deleted: ${id}`);
         resolve();
       };
     } catch (error) {
@@ -193,14 +188,4 @@ export async function getBlobUrl(id: string): Promise<string | null> {
   const blob = await getBlob(id);
   if (!blob) return null;
   return URL.createObjectURL(blob);
-}
-
-// Check if IndexedDB is available and working
-export async function checkIndexedDBSupport(): Promise<boolean> {
-  try {
-    await openDB();
-    return true;
-  } catch {
-    return false;
-  }
 }

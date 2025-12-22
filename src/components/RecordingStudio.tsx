@@ -543,8 +543,12 @@ export function RecordingStudio({
                     'disabled:opacity-50 disabled:cursor-not-allowed'
                   )}
                 >
-                  {recordMode === 'video' ? <Video className="w-4 h-4 md:w-5 md:h-5" /> : <Mic className="w-4 h-4 md:w-5 md:h-5" />}
-                  {t('recording.start')}
+                  {recordMode === 'video' ? (
+                    <Video className="w-4 h-4 md:w-5 md:h-5" />
+                  ) : (
+                    <Mic className="w-4 h-4 md:w-5 md:h-5" />
+                  )}
+                  {recordMode === 'video' ? t('recording.video') : t('recording.audio')}
                 </button>
 
                 {/* Settings Button */}
