@@ -1,6 +1,6 @@
 {
   "app": {
-    "title": "练习演讲",
+    "title": "TalkUp",
     "description": "获取随机话题或创建自己的话题，然后录制自己来提升。"
   },
   "topic": {

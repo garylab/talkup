@@ -1,4 +1,4 @@
-# Random Speech
+# TalkUp
 
 A speech practice app that gives you random topics to talk about. Record yourself, playback, and improve your speaking skills.
 
@@ -11,14 +11,13 @@ A speech practice app that gives you random topics to talk about. Record yoursel
 - ⏸️ **Pause/Resume** - Control your recording flow
 - 💾 **Local Storage** - Recordings saved in your browser (IndexedDB)
 - 🌐 **Multi-language** - English and Simplified Chinese support
-- 📱 **Responsive** - Works on desktop and mobile
+- 📱 **PWA** - Install as app on mobile/desktop
+- 🔍 **Search** - Find recordings by title or topic
 
 ## Languages
 
-- 🇬🇧 English
-- 🇨🇳 简体中文 (Simplified Chinese)
-
-The app auto-detects your browser language and saves your preference.
+- 🇬🇧 English (`/`)
+- 🇨🇳 简体中文 (`/zh`)
 
 ## Tech Stack
 
@@ -76,8 +75,10 @@ npm run deploy
 ```
 ├── src/
 │   ├── app/                 # Next.js pages
-│   │   └── page.tsx         # Home page with recording studio
+│   │   ├── page.tsx         # English home page
+│   │   └── zh/page.tsx      # Chinese home page
 │   ├── components/          # React components
+│   │   ├── HomePage.tsx
 │   │   ├── RecordingStudio.tsx
 │   │   └── LanguageSwitcher.tsx
 │   ├── data/                # Topic data
@@ -86,18 +87,20 @@ npm run deploy
 │   ├── i18n/                # Internationalization
 │   │   ├── index.ts
 │   │   └── locales/
-│   │       ├── en.json      # English translations
-│   │       └── zh.json      # Chinese translations
+│   │       ├── en.json
+│   │       └── zh.json
 │   ├── hooks/               # Custom React hooks
 │   │   ├── useRecorder.ts
-│   │   ├── useLocalStorage.ts
-│   │   └── useLocale.ts
+│   │   └── useLocalStorage.ts
 │   ├── lib/                 # Utilities
 │   │   ├── api.ts
 │   │   ├── indexedDB.ts
 │   │   └── utils.ts
 │   └── types/
 ├── public/
+│   ├── manifest.json        # PWA manifest
+│   ├── sw.js               # Service worker
+│   └── icons/              # App icons
 ├── out/                     # Built static files
 ├── next.config.js
 ├── wrangler.toml

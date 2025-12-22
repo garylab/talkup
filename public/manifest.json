@@ -1,12 +1,14 @@
 {
-  "name": "Random Speech",
-  "short_name": "Speech",
+  "name": "TalkUp",
+  "short_name": "TalkUp",
   "description": "Practice speaking with random topics",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "fullscreen"],
   "background_color": "#020617",
-  "theme_color": "#f43f5e",
-  "orientation": "portrait-primary",
+  "theme_color": "#020617",
+  "orientation": "any",
   "icons": [
     {
       "src": "/icons/icon.svg",
