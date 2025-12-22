@@ -104,6 +104,7 @@ export async function saveRecording(input: AddRecordingInput): Promise<LocalReco
     type: input.type,
     format: input.format,
     duration: input.duration,
+    size: input.blob.size,
     createdAt: new Date().toISOString(),
     synced: false,
   };

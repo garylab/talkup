@@ -8,7 +8,7 @@ import { useRecorder } from '@/hooks/useRecorder';
 import { useLocalRecordings } from '@/hooks/useLocalStorage';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { getBlobUrl } from '@/lib/indexedDB';
-import { cn, formatDuration, formatDate } from '@/lib/utils';
+import { cn, formatDuration, formatDate, formatFileSize } from '@/lib/utils';
 import { t as translate, getTopics, Locale } from '@/i18n';
 import type { RecordingType } from '@/types';
 
@@ -361,9 +361,13 @@ export function HomePage({ locale }: HomePageProps) {
                         <p className="text-xs text-slate-500">{formatDate(recording.createdAt)}</p>
                       </div>
 
-                      {/* Duration */}
-                      <div className="hidden sm:block text-xs font-mono text-slate-400">
-                        {formatDuration(recording.duration)}
+                      {/* File info: size, extension, duration */}
+                      <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-slate-400">
+                        <span>{formatFileSize(recording.size || 0)}</span>
+                        <span className="text-slate-600">•</span>
+                        <span className="uppercase">{recording.format === 'mp4' ? (recording.type === 'video' ? 'mp4' : 'm4a') : 'webm'}</span>
+                        <span className="text-slate-600">•</span>
+                        <span>{formatDuration(recording.duration)}</span>
                       </div>
 
                       {/* Share button */}

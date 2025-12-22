@@ -49,6 +49,7 @@ export function RecordingStudio({
   topics,
 }: RecordingStudioProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const fullscreenVideoRef = useRef<HTMLVideoElement>(null);
   const playbackRef = useRef<HTMLVideoElement | HTMLAudioElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -65,11 +66,24 @@ export function RecordingStudio({
   const [selectedAudioDevice, setSelectedAudioDevice] = useState<string>('');
   const [selectedVideoDevice, setSelectedVideoDevice] = useState<string>('');
 
+  // Set media stream on video elements
   useEffect(() => {
-    if (videoRef.current && mediaStream && recordingType === 'video') {
-      videoRef.current.srcObject = mediaStream;
+    if (mediaStream && recordingType === 'video') {
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+      }
+      if (fullscreenVideoRef.current) {
+        fullscreenVideoRef.current.srcObject = mediaStream;
+      }
     }
   }, [mediaStream, recordingType]);
+
+  // Also update fullscreen video when maximized state changes
+  useEffect(() => {
+    if (isMaximized && fullscreenVideoRef.current && mediaStream && recordingType === 'video') {
+      fullscreenVideoRef.current.srcObject = mediaStream;
+    }
+  }, [isMaximized, mediaStream, recordingType]);
 
   // Handle ESC key to exit maximized mode or close settings
   useEffect(() => {
@@ -199,7 +213,7 @@ export function RecordingStudio({
           <div className="flex-1 relative">
             {recordingType === 'video' && mediaStream && (
               <video
-                ref={videoRef}
+                ref={fullscreenVideoRef}
                 autoPlay
                 muted
                 playsInline

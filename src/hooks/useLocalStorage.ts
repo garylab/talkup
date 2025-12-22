@@ -56,6 +56,7 @@ export interface LocalRecording {
   type: 'video' | 'audio';
   format: 'mp4' | 'webm';
   duration: number;
+  size: number; // File size in bytes
   createdAt: string;
   synced: boolean;
 }
