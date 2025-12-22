@@ -684,41 +684,265 @@ export function RecordingStudio({
             )}
 
             {isRecording && (
-              <div className="flex items-center justify-center gap-2 md:gap-3 w-full">
-                <button
-                  onClick={onPause}
-                  className="flex items-center gap-1.5 md:gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-lg md:rounded-xl font-medium text-sm md:text-base bg-yellow-500 hover:bg-yellow-600 text-black transition-all active:scale-95"
-                >
-                  <Pause className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                  {t('recording.pause')}
-                </button>
-                <button
-                  onClick={onStop}
-                  className="flex items-center gap-1.5 md:gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-lg md:rounded-xl font-medium text-sm md:text-base bg-red-500/80 hover:bg-red-500 transition-all active:scale-95"
-                >
-                  <Square className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                  {t('recording.stop')}
-                </button>
-              </div>
+              <>
+                {/* Left side: Recording controls */}
+                <div className="flex items-center gap-2 md:gap-3">
+                  <button
+                    onClick={onPause}
+                    className="flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-lg font-medium text-xs md:text-sm bg-yellow-500 hover:bg-yellow-600 text-black transition-all active:scale-95"
+                  >
+                    <Pause className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    {t('recording.pause')}
+                  </button>
+                  <button
+                    onClick={onStop}
+                    className="flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-lg font-medium text-xs md:text-sm bg-red-500/80 hover:bg-red-500 transition-all active:scale-95"
+                  >
+                    <Square className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    {t('recording.stop')}
+                  </button>
+                </div>
+
+                {/* Right side: Device Dropdowns */}
+                <div className="flex items-center gap-2 md:gap-3">
+                  {/* Camera Dropdown (only shown when video mode) */}
+                  {recordingType === 'video' && (
+                    <div className="relative" data-dropdown>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowCameraDropdown(!showCameraDropdown);
+                          setShowMicDropdown(false);
+                        }}
+                        className={cn(
+                          'flex items-center gap-1 px-2 py-1.5 md:px-2.5 md:py-2 rounded-lg',
+                          'bg-white/5 border border-white/10 text-slate-300',
+                          'hover:bg-white/10 hover:text-white transition-all',
+                          showCameraDropdown && 'bg-white/10 text-white'
+                        )}
+                      >
+                        <Video className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                        <ChevronDown className={cn('w-3 h-3 transition-transform', showCameraDropdown && 'rotate-180')} />
+                      </button>
+                      
+                      {showCameraDropdown && (
+                        <div className="absolute top-full right-0 mt-1 w-64 bg-slate-950 border border-white/20 rounded-lg shadow-2xl z-[100] animate-fade-in">
+                          <div className="p-1.5 max-h-48 overflow-y-auto">
+                            {videoDevices.length === 0 ? (
+                              <div className="px-3 py-2 text-sm text-slate-500">{t('settings.noDevices')}</div>
+                            ) : (
+                              videoDevices.map((device) => (
+                                <button
+                                  key={device.deviceId}
+                                  onClick={() => {
+                                    setSelectedVideoDevice(device.deviceId);
+                                    setShowCameraDropdown(false);
+                                  }}
+                                  className={cn(
+                                    'w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-all',
+                                    device.deviceId === selectedVideoDevice
+                                      ? 'bg-violet-500/20 text-violet-300'
+                                      : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                                  )}
+                                >
+                                  <Check className={cn(
+                                    'w-4 h-4 shrink-0',
+                                    device.deviceId === selectedVideoDevice ? 'opacity-100' : 'opacity-0'
+                                  )} />
+                                  <span className="line-clamp-1 text-left">{device.label}</span>
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Microphone Dropdown */}
+                  <div className="relative" data-dropdown>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowMicDropdown(!showMicDropdown);
+                        setShowCameraDropdown(false);
+                      }}
+                      className={cn(
+                        'flex items-center gap-1 px-2 py-1.5 md:px-2.5 md:py-2 rounded-lg',
+                        'bg-white/5 border border-white/10 text-slate-300',
+                        'hover:bg-white/10 hover:text-white transition-all',
+                        showMicDropdown && 'bg-white/10 text-white'
+                      )}
+                    >
+                      <Mic className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                      <ChevronDown className={cn('w-3 h-3 transition-transform', showMicDropdown && 'rotate-180')} />
+                    </button>
+                    
+                    {showMicDropdown && (
+                      <div className="absolute top-full right-0 mt-1 w-64 bg-slate-950 border border-white/20 rounded-lg shadow-2xl z-[100] animate-fade-in">
+                        <div className="p-1.5 max-h-48 overflow-y-auto">
+                          {audioDevices.length === 0 ? (
+                            <div className="px-3 py-2 text-sm text-slate-500">{t('settings.noDevices')}</div>
+                          ) : (
+                            audioDevices.map((device) => (
+                              <button
+                                key={device.deviceId}
+                                onClick={() => {
+                                  setSelectedAudioDevice(device.deviceId);
+                                  setShowMicDropdown(false);
+                                }}
+                                className={cn(
+                                  'w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-all',
+                                  device.deviceId === selectedAudioDevice
+                                    ? 'bg-rose-500/20 text-rose-300'
+                                    : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                                )}
+                              >
+                                <Check className={cn(
+                                  'w-4 h-4 shrink-0',
+                                  device.deviceId === selectedAudioDevice ? 'opacity-100' : 'opacity-0'
+                                )} />
+                                <span className="line-clamp-1 text-left">{device.label}</span>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
             )}
 
             {isPaused && (
-              <div className="flex items-center justify-center gap-2 md:gap-3 w-full">
-                <button
-                  onClick={onResume}
-                  className="flex items-center gap-1.5 md:gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-lg md:rounded-xl font-medium text-sm md:text-base bg-green-500 hover:bg-green-600 transition-all active:scale-95"
-                >
-                  <Play className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                  {t('recording.resume')}
-                </button>
-                <button
-                  onClick={onStop}
-                  className="flex items-center gap-1.5 md:gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-lg md:rounded-xl font-medium text-sm md:text-base bg-red-500/80 hover:bg-red-500 transition-all active:scale-95"
-                >
-                  <Square className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                  {t('recording.stop')}
-                </button>
-              </div>
+              <>
+                {/* Left side: Recording controls */}
+                <div className="flex items-center gap-2 md:gap-3">
+                  <button
+                    onClick={onResume}
+                    className="flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-lg font-medium text-xs md:text-sm bg-green-500 hover:bg-green-600 transition-all active:scale-95"
+                  >
+                    <Play className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    {t('recording.resume')}
+                  </button>
+                  <button
+                    onClick={onStop}
+                    className="flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-lg font-medium text-xs md:text-sm bg-red-500/80 hover:bg-red-500 transition-all active:scale-95"
+                  >
+                    <Square className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    {t('recording.stop')}
+                  </button>
+                </div>
+
+                {/* Right side: Device Dropdowns */}
+                <div className="flex items-center gap-2 md:gap-3">
+                  {/* Camera Dropdown (only shown when video mode) */}
+                  {recordingType === 'video' && (
+                    <div className="relative" data-dropdown>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowCameraDropdown(!showCameraDropdown);
+                          setShowMicDropdown(false);
+                        }}
+                        className={cn(
+                          'flex items-center gap-1 px-2 py-1.5 md:px-2.5 md:py-2 rounded-lg',
+                          'bg-white/5 border border-white/10 text-slate-300',
+                          'hover:bg-white/10 hover:text-white transition-all',
+                          showCameraDropdown && 'bg-white/10 text-white'
+                        )}
+                      >
+                        <Video className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                        <ChevronDown className={cn('w-3 h-3 transition-transform', showCameraDropdown && 'rotate-180')} />
+                      </button>
+                      
+                      {showCameraDropdown && (
+                        <div className="absolute top-full right-0 mt-1 w-64 bg-slate-950 border border-white/20 rounded-lg shadow-2xl z-[100] animate-fade-in">
+                          <div className="p-1.5 max-h-48 overflow-y-auto">
+                            {videoDevices.length === 0 ? (
+                              <div className="px-3 py-2 text-sm text-slate-500">{t('settings.noDevices')}</div>
+                            ) : (
+                              videoDevices.map((device) => (
+                                <button
+                                  key={device.deviceId}
+                                  onClick={() => {
+                                    setSelectedVideoDevice(device.deviceId);
+                                    setShowCameraDropdown(false);
+                                  }}
+                                  className={cn(
+                                    'w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-all',
+                                    device.deviceId === selectedVideoDevice
+                                      ? 'bg-violet-500/20 text-violet-300'
+                                      : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                                  )}
+                                >
+                                  <Check className={cn(
+                                    'w-4 h-4 shrink-0',
+                                    device.deviceId === selectedVideoDevice ? 'opacity-100' : 'opacity-0'
+                                  )} />
+                                  <span className="line-clamp-1 text-left">{device.label}</span>
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Microphone Dropdown */}
+                  <div className="relative" data-dropdown>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowMicDropdown(!showMicDropdown);
+                        setShowCameraDropdown(false);
+                      }}
+                      className={cn(
+                        'flex items-center gap-1 px-2 py-1.5 md:px-2.5 md:py-2 rounded-lg',
+                        'bg-white/5 border border-white/10 text-slate-300',
+                        'hover:bg-white/10 hover:text-white transition-all',
+                        showMicDropdown && 'bg-white/10 text-white'
+                      )}
+                    >
+                      <Mic className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                      <ChevronDown className={cn('w-3 h-3 transition-transform', showMicDropdown && 'rotate-180')} />
+                    </button>
+                    
+                    {showMicDropdown && (
+                      <div className="absolute top-full right-0 mt-1 w-64 bg-slate-950 border border-white/20 rounded-lg shadow-2xl z-[100] animate-fade-in">
+                        <div className="p-1.5 max-h-48 overflow-y-auto">
+                          {audioDevices.length === 0 ? (
+                            <div className="px-3 py-2 text-sm text-slate-500">{t('settings.noDevices')}</div>
+                          ) : (
+                            audioDevices.map((device) => (
+                              <button
+                                key={device.deviceId}
+                                onClick={() => {
+                                  setSelectedAudioDevice(device.deviceId);
+                                  setShowMicDropdown(false);
+                                }}
+                                className={cn(
+                                  'w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-all',
+                                  device.deviceId === selectedAudioDevice
+                                    ? 'bg-rose-500/20 text-rose-300'
+                                    : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                                )}
+                              >
+                                <Check className={cn(
+                                  'w-4 h-4 shrink-0',
+                                  device.deviceId === selectedAudioDevice ? 'opacity-100' : 'opacity-0'
+                                )} />
+                                <span className="line-clamp-1 text-left">{device.label}</span>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
             )}
 
             {isStopped && (
