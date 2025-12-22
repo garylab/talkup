@@ -18,7 +18,7 @@ interface UseRecorderReturn {
   recordedUrl: string | null;
   error: string | null;
   recordingType: RecordingType | null;
-  startRecording: (type: RecordingType) => Promise<void>;
+  startRecording: (type: RecordingType, audioDeviceId?: string, videoDeviceId?: string) => Promise<void>;
   pauseRecording: () => void;
   resumeRecording: () => void;
   stopRecording: () => void;
@@ -90,15 +90,27 @@ export function useRecorder({ onDataAvailable, onRecordingComplete }: UseRecorde
     }
   }, []);
 
-  const startRecording = useCallback(async (type: RecordingType) => {
+  const startRecording = useCallback(async (type: RecordingType, audioDeviceId?: string, videoDeviceId?: string) => {
     try {
       setError(null);
       chunksRef.current = [];
       setRecordingType(type);
 
+      const audioConstraints: MediaTrackConstraints = audioDeviceId 
+        ? { deviceId: { exact: audioDeviceId } }
+        : true;
+      
+      const videoConstraints: MediaTrackConstraints | boolean = type === 'video'
+        ? {
+            ...(videoDeviceId ? { deviceId: { exact: videoDeviceId } } : { facingMode: 'user' }),
+            width: 1280,
+            height: 720,
+          }
+        : false;
+
       const constraints: MediaStreamConstraints = {
-        audio: true,
-        video: type === 'video' ? { facingMode: 'user', width: 1280, height: 720 } : false,
+        audio: audioConstraints,
+        video: videoConstraints,
       };
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);

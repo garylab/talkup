@@ -88,10 +88,10 @@ export function HomePage({ locale }: HomePageProps) {
     }
   }, [recorder.recordingType]);
 
-  // Handle start recording with type
-  const handleStart = useCallback((type: RecordingType) => {
+  // Handle start recording with type and device selection
+  const handleStart = useCallback((type: RecordingType, audioDeviceId?: string, videoDeviceId?: string) => {
     recordingTypeRef.current = type;
-    recorder.startRecording(type);
+    recorder.startRecording(type, audioDeviceId, videoDeviceId);
   }, [recorder]);
 
   // Filter recordings by search query

@@ -16,12 +16,23 @@
   "recording": {
     "startVideo": "Start Video",
     "startAudio": "Start Audio",
+    "start": "Start",
     "pause": "Pause",
     "resume": "Resume",
     "stop": "Stop",
     "back": "Back",
     "rec": "REC",
-    "paused": "PAUSED"
+    "paused": "PAUSED",
+    "video": "Video",
+    "audio": "Audio"
+  },
+  "settings": {
+    "title": "Settings",
+    "microphone": "Microphone",
+    "camera": "Camera",
+    "selectMicrophone": "Select microphone",
+    "selectCamera": "Select camera",
+    "noDevices": "No devices found"
   },
   "recordings": {
     "title": "Recordings",
