@@ -49,7 +49,9 @@
     "share": "Compartilhar"
   },
   "pwa": {
-    "install": "Instalar App"
+    "install": "Instalar App",
+    "updateAvailable": "Nova versão disponível!",
+    "update": "Atualizar"
   }
 }
 

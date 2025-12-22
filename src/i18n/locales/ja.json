@@ -49,7 +49,9 @@
     "share": "共有"
   },
   "pwa": {
-    "install": "アプリをインストール"
+    "install": "アプリをインストール",
+    "updateAvailable": "新しいバージョンがあります！",
+    "update": "更新"
   }
 }
 

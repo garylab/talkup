@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Trash2, Mic, Video, ChevronDown, ChevronUp, Loader2, Search, X, Download, Share2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Trash2, Mic, Video, ChevronDown, ChevronUp, Loader2, Search, X, Download, Share2, RefreshCw } from 'lucide-react';
 import { RecordingStudio } from '@/components/RecordingStudio';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useRecorder } from '@/hooks/useRecorder';
 import { useLocalRecordings } from '@/hooks/useLocalStorage';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
+import { useServiceWorker } from '@/hooks/useServiceWorker';
 import { getBlobUrl } from '@/lib/storage';
 import { cn, formatDuration, formatDate, formatFileSize } from '@/lib/utils';
 import { t as translate, getTopics, Locale } from '@/i18n';
@@ -31,6 +32,9 @@ export function HomePage({ locale }: HomePageProps) {
 
   // PWA install
   const { isInstallable, install } = usePWAInstall();
+
+  // Service worker updates
+  const { isUpdateAvailable, updateServiceWorker } = useServiceWorker();
 
   // Use refs to track values for the callback
   const topicRef = useRef(topic);
@@ -235,6 +239,20 @@ export function HomePage({ locale }: HomePageProps) {
 
       {/* Content */}
       <div className="relative z-10 w-full max-w-4xl mx-auto">
+        {/* Update notification */}
+        {isUpdateAvailable && (
+          <div className="mb-4 flex items-center justify-between gap-3 px-4 py-2.5 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/30 rounded-xl">
+            <span className="text-sm text-blue-200">{t('pwa.updateAvailable')}</span>
+            <button
+              onClick={updateServiceWorker}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm font-medium bg-blue-500 hover:bg-blue-600 transition-all"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              {t('pwa.update')}
+            </button>
+          </div>
+        )}
+
         {/* Header with language switcher */}
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3 flex-1 min-w-0">

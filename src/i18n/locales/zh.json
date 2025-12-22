@@ -49,7 +49,9 @@
     "share": "分享"
   },
   "pwa": {
-    "install": "安装应用"
+    "install": "安装应用",
+    "updateAvailable": "新版本可用！",
+    "update": "更新"
   }
 }
 
