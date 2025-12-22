@@ -1,0 +1,53 @@
+{
+  "app": {
+    "title": "TalkUp",
+    "description": "Holen Sie sich ein zufälliges Thema oder erstellen Sie Ihr eigenes, dann nehmen Sie sich auf."
+  },
+  "topic": {
+    "question": "Wähle ein Thema und übe sprechen",
+    "or": "oder",
+    "create": "Erstellen",
+    "enterTopic": "Geben Sie Ihr Thema ein",
+    "placeholder": "z.B. Meine Lieblingserinnerung",
+    "use": "Verwenden",
+    "refresh": "Aktualisieren"
+  },
+  "recording": {
+    "startVideo": "Video starten",
+    "startAudio": "Audio starten",
+    "start": "Start",
+    "pause": "Pause",
+    "resume": "Fortsetzen",
+    "stop": "Stopp",
+    "back": "Zurück",
+    "rec": "AUFN",
+    "paused": "PAUSIERT",
+    "video": "Video",
+    "audio": "Audio"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "mode": "Aufnahmemodus",
+    "microphone": "Mikrofon",
+    "camera": "Kamera",
+    "selectMicrophone": "Mikrofon auswählen",
+    "selectCamera": "Kamera auswählen",
+    "noDevices": "Keine Geräte gefunden",
+    "save": "Speichern"
+  },
+  "recordings": {
+    "title": "Aufnahmen",
+    "search": "Aufnahmen suchen...",
+    "noResults": "Keine Aufnahmen gefunden",
+    "notFound": "Aufnahme nicht gefunden",
+    "deleteConfirm": "Diese Aufnahme löschen?"
+  },
+  "common": {
+    "delete": "Löschen",
+    "share": "Teilen"
+  },
+  "pwa": {
+    "install": "App installieren"
+  }
+}
+

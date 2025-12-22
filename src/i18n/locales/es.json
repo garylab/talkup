@@ -1,0 +1,53 @@
+{
+  "app": {
+    "title": "TalkUp",
+    "description": "Obtén un tema aleatorio o crea el tuyo, luego grábate para mejorar."
+  },
+  "topic": {
+    "question": "Elige un tema y practica hablando",
+    "or": "o",
+    "create": "Crear",
+    "enterTopic": "Ingresa tu tema",
+    "placeholder": "ej. Mi Recuerdo Favorito",
+    "use": "Usar",
+    "refresh": "Actualizar"
+  },
+  "recording": {
+    "startVideo": "Iniciar Video",
+    "startAudio": "Iniciar Audio",
+    "start": "Iniciar",
+    "pause": "Pausar",
+    "resume": "Continuar",
+    "stop": "Detener",
+    "back": "Volver",
+    "rec": "GRAB",
+    "paused": "PAUSADO",
+    "video": "Video",
+    "audio": "Audio"
+  },
+  "settings": {
+    "title": "Ajustes",
+    "mode": "Modo de Grabación",
+    "microphone": "Micrófono",
+    "camera": "Cámara",
+    "selectMicrophone": "Seleccionar micrófono",
+    "selectCamera": "Seleccionar cámara",
+    "noDevices": "No se encontraron dispositivos",
+    "save": "Guardar"
+  },
+  "recordings": {
+    "title": "Grabaciones",
+    "search": "Buscar grabaciones...",
+    "noResults": "No se encontraron grabaciones",
+    "notFound": "Grabación no encontrada",
+    "deleteConfirm": "¿Eliminar esta grabación?"
+  },
+  "common": {
+    "delete": "Eliminar",
+    "share": "Compartir"
+  },
+  "pwa": {
+    "install": "Instalar App"
+  }
+}
+

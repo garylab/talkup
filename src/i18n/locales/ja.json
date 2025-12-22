@@ -1,0 +1,53 @@
+{
+  "app": {
+    "title": "TalkUp",
+    "description": "ランダムなトピックを取得するか、自分で作成して、録音して上達しましょう。"
+  },
+  "topic": {
+    "question": "トピックを選んでスピーチ練習",
+    "or": "または",
+    "create": "作成",
+    "enterTopic": "トピックを入力",
+    "placeholder": "例：私の好きな思い出",
+    "use": "使用",
+    "refresh": "更新"
+  },
+  "recording": {
+    "startVideo": "動画開始",
+    "startAudio": "音声開始",
+    "start": "開始",
+    "pause": "一時停止",
+    "resume": "再開",
+    "stop": "停止",
+    "back": "戻る",
+    "rec": "録画中",
+    "paused": "一時停止中",
+    "video": "動画",
+    "audio": "音声"
+  },
+  "settings": {
+    "title": "設定",
+    "mode": "録画モード",
+    "microphone": "マイク",
+    "camera": "カメラ",
+    "selectMicrophone": "マイクを選択",
+    "selectCamera": "カメラを選択",
+    "noDevices": "デバイスが見つかりません",
+    "save": "保存"
+  },
+  "recordings": {
+    "title": "録画一覧",
+    "search": "録画を検索...",
+    "noResults": "録画が見つかりません",
+    "notFound": "録画が見つかりません",
+    "deleteConfirm": "この録画を削除しますか？"
+  },
+  "common": {
+    "delete": "削除",
+    "share": "共有"
+  },
+  "pwa": {
+    "install": "アプリをインストール"
+  }
+}
+

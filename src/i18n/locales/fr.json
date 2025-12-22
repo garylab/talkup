@@ -1,0 +1,53 @@
+{
+  "app": {
+    "title": "TalkUp",
+    "description": "Obtenez un sujet aléatoire ou créez le vôtre, puis enregistrez-vous pour vous améliorer."
+  },
+  "topic": {
+    "question": "Choisissez un sujet et pratiquez",
+    "or": "ou",
+    "create": "Créer",
+    "enterTopic": "Entrez votre sujet",
+    "placeholder": "ex. Mon Souvenir Préféré",
+    "use": "Utiliser",
+    "refresh": "Actualiser"
+  },
+  "recording": {
+    "startVideo": "Démarrer Vidéo",
+    "startAudio": "Démarrer Audio",
+    "start": "Démarrer",
+    "pause": "Pause",
+    "resume": "Reprendre",
+    "stop": "Arrêter",
+    "back": "Retour",
+    "rec": "ENREG",
+    "paused": "EN PAUSE",
+    "video": "Vidéo",
+    "audio": "Audio"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "mode": "Mode d'enregistrement",
+    "microphone": "Microphone",
+    "camera": "Caméra",
+    "selectMicrophone": "Sélectionner le microphone",
+    "selectCamera": "Sélectionner la caméra",
+    "noDevices": "Aucun appareil trouvé",
+    "save": "Sauvegarder"
+  },
+  "recordings": {
+    "title": "Enregistrements",
+    "search": "Rechercher...",
+    "noResults": "Aucun enregistrement trouvé",
+    "notFound": "Enregistrement introuvable",
+    "deleteConfirm": "Supprimer cet enregistrement ?"
+  },
+  "common": {
+    "delete": "Supprimer",
+    "share": "Partager"
+  },
+  "pwa": {
+    "install": "Installer l'app"
+  }
+}
+
