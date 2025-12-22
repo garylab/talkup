@@ -27,7 +27,7 @@ export function HomePage({ locale }: HomePageProps) {
   const [topic, setTopic] = useState<string | null>(null);
   
   // Local storage (metadata in localStorage, blobs in IndexedDB)
-  const { recordings, addRecording, removeRecording } = useLocalRecordings();
+  const { recordings, isHydrated, addRecording, removeRecording } = useLocalRecordings();
 
   // PWA install
   const { isInstallable, install } = usePWAInstall();
@@ -37,16 +37,11 @@ export function HomePage({ locale }: HomePageProps) {
   const recordingTypeRef = useRef<RecordingType>('video');
   
   // Recordings list state
-  const [isMounted, setIsMounted] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [blobUrls, setBlobUrls] = useState<Record<string, string>>({});
   const [loadingBlob, setLoadingBlob] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
   
   useEffect(() => {
     topicRef.current = topic;
@@ -285,7 +280,7 @@ export function HomePage({ locale }: HomePageProps) {
         />
 
         {/* Recordings List */}
-        {isMounted && recordings.length > 0 && (
+        {isHydrated && recordings.length > 0 && (
           <div className="mt-6">
             <div className="flex items-center justify-between gap-4 mb-3">
               <h2 className="text-lg font-semibold text-slate-300">

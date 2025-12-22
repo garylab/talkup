@@ -38,3 +38,6 @@ export function useSettings() {
     setSelectedVideoDevice,
   };
 }
+
+// Re-export for convenience
+export type { AppSettings };
