@@ -262,27 +262,29 @@ export function HomePage({ locale }: HomePageProps) {
         </div>
 
         {/* Recording Studio */}
-        <RecordingStudio
-          state={recorder.state}
-          duration={recorder.duration}
-          mediaStream={recorder.mediaStream}
-          recordedUrl={recorder.recordedUrl}
-          error={recorder.error}
-          onStart={handleStart}
-          onPause={recorder.pauseRecording}
-          onResume={recorder.resumeRecording}
-          onStop={recorder.stopRecording}
-          onReset={recorder.resetRecording}
-          topic={topic}
-          onTopicChange={setTopic}
-          recordingType={recorder.recordingType || 'video'}
-          t={t}
-          topics={topics}
-        />
+        <div className="relative z-10">
+          <RecordingStudio
+            state={recorder.state}
+            duration={recorder.duration}
+            mediaStream={recorder.mediaStream}
+            recordedUrl={recorder.recordedUrl}
+            error={recorder.error}
+            onStart={handleStart}
+            onPause={recorder.pauseRecording}
+            onResume={recorder.resumeRecording}
+            onStop={recorder.stopRecording}
+            onReset={recorder.resetRecording}
+            topic={topic}
+            onTopicChange={setTopic}
+            recordingType={recorder.recordingType || 'video'}
+            t={t}
+            topics={topics}
+          />
+        </div>
 
         {/* Recordings List */}
         {isHydrated && recordings.length > 0 && (
-          <div className="mt-6">
+          <div className="mt-6 relative z-0">
             <div className="flex items-center justify-between gap-4 mb-3">
               <h2 className="text-lg font-semibold text-slate-300">
                 {t('recordings.title')} ({filteredRecordings.length})
