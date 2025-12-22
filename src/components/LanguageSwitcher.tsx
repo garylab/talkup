@@ -48,8 +48,7 @@ export function LanguageSwitcher({ locale }: LanguageSwitcherProps) {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm',
-          'bg-white/5 border border-white/10',
+          'flex items-center gap-1.5 px-1.5 py-1 rounded-lg text-sm',
           'hover:bg-white/10 transition-all',
           isOpen && 'bg-white/10'
         )}

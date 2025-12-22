@@ -205,6 +205,9 @@ export function RecordingStudio({
     }
   }, [onTopicChange, topics]);
 
+  // Track previous state to detect when returning from stopped
+  const prevStateRef = useRef<RecorderState>(state);
+  
   // Auto-load topic on mount
   useEffect(() => {
     if (!topic && isIdle) {
@@ -212,6 +215,14 @@ export function RecordingStudio({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Auto-load new topic when returning from stopped state
+  useEffect(() => {
+    if (prevStateRef.current === 'stopped' && state === 'idle') {
+      handleGetTopic();
+    }
+    prevStateRef.current = state;
+  }, [state, handleGetTopic]);
 
   const handleCreateTopic = () => {
     if (customTopic.trim()) {
