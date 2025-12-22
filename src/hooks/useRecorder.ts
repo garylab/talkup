@@ -134,25 +134,33 @@ export function useRecorder({ onDataAvailable, onRecordingComplete }: UseRecorde
       chunksRef.current = [];
       setRecordingType(type);
 
+      // Build audio constraints - iOS Safari doesn't like 'exact' for deviceId
       const audioConstraints: MediaTrackConstraints | boolean = audioDeviceId 
-        ? { deviceId: { exact: audioDeviceId } }
+        ? { deviceId: audioDeviceId }
         : true;
       
-      // Use 720p for good balance of quality and file size
-      const videoConstraints: MediaTrackConstraints | boolean = type === 'video'
-        ? {
-            ...(videoDeviceId ? { deviceId: { exact: videoDeviceId } } : { facingMode: 'user' }),
-            width: { ideal: 1280, max: 1280 },
-            height: { ideal: 720, max: 720 },
-          }
-        : false;
+      // Build video constraints - keep it simple for iOS compatibility
+      let videoConstraints: MediaTrackConstraints | boolean = false;
+      if (type === 'video') {
+        videoConstraints = {
+          facingMode: 'user',
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        };
+        // Only add deviceId if provided
+        if (videoDeviceId) {
+          videoConstraints.deviceId = videoDeviceId;
+        }
+      }
 
       const constraints: MediaStreamConstraints = {
         audio: audioConstraints,
         video: videoConstraints,
       };
 
+      console.log('[useRecorder] Requesting media with constraints:', JSON.stringify(constraints));
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log('[useRecorder] Got media stream');
       setMediaStream(stream);
 
       // Get best codec for this browser (MP4 for Safari, WebM for others)

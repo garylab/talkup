@@ -1,64 +1,45 @@
 'use client';
 
-import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { saveBlob, deleteBlob } from '@/lib/indexedDB';
 import { uuid7 } from '@/lib/utils';
 
-// Simple localStorage helper
-function getStorageValue<T>(key: string, initialValue: T): T {
-  if (typeof window === 'undefined') return initialValue;
-  try {
-    const item = window.localStorage.getItem(key);
-    return item ? JSON.parse(item) : initialValue;
-  } catch {
-    return initialValue;
-  }
-}
-
-function setStorageValue<T>(key: string, value: T): void {
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch (error) {
-    console.error(`[localStorage] Failed to write "${key}":`, error);
-  }
-}
-
-// Generic localStorage hook - simple and reliable
+// Simple localStorage hook - iOS compatible
 export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((prev: T) => T)) => void, boolean] {
+  const [storedValue, setStoredValue] = useState<T>(initialValue);
   const [isHydrated, setIsHydrated] = useState(false);
-  
-  // Use useSyncExternalStore for reliable synchronization with localStorage
-  const subscribe = useCallback((callback: () => void) => {
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === key) callback();
-    };
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    try {
+      const item = window.localStorage.getItem(key);
+      if (item) {
+        const parsed = JSON.parse(item);
+        console.log(`[useLocalStorage] Loaded "${key}":`, parsed?.length ?? parsed);
+        setStoredValue(parsed);
+      }
+    } catch (error) {
+      console.error(`[useLocalStorage] Error loading "${key}":`, error);
+    }
+    setIsHydrated(true);
   }, [key]);
 
-  const getSnapshot = useCallback(() => {
-    return JSON.stringify(getStorageValue(key, initialValue));
-  }, [key, initialValue]);
-
-  const getServerSnapshot = useCallback(() => {
-    return JSON.stringify(initialValue);
-  }, [initialValue]);
-
-  const storedString = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const storedValue = JSON.parse(storedString) as T;
-
-  // Track hydration
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
-
   const setValue = useCallback((value: T | ((prev: T) => T)) => {
-    const currentValue = getStorageValue(key, initialValue);
-    const newValue = value instanceof Function ? value(currentValue) : value;
-    setStorageValue(key, newValue);
-    // Trigger re-render by dispatching storage event
-    window.dispatchEvent(new StorageEvent('storage', { key }));
-  }, [key, initialValue]);
+    setStoredValue((currentValue) => {
+      const newValue = value instanceof Function ? value(currentValue) : value;
+      
+      // Write to localStorage immediately
+      try {
+        const json = JSON.stringify(newValue);
+        window.localStorage.setItem(key, json);
+        console.log(`[useLocalStorage] Saved "${key}":`, Array.isArray(newValue) ? newValue.length : newValue);
+      } catch (error) {
+        console.error(`[useLocalStorage] Error saving "${key}":`, error);
+      }
+      
+      return newValue;
+    });
+  }, [key]);
 
   return [storedValue, setValue, isHydrated];
 }
@@ -88,14 +69,15 @@ export function useLocalRecordings() {
 
   const addRecording = useCallback(async (input: AddRecordingInput): Promise<LocalRecording> => {
     const id = uuid7();
+    console.log(`[addRecording] Starting save for ${id}`);
     
     try {
-      // Save blob to IndexedDB first
+      // Save blob to IndexedDB
       await saveBlob(id, input.blob);
-      console.log(`[addRecording] Blob saved: ${id}`);
+      console.log(`[addRecording] Blob saved to IndexedDB: ${id}`);
     } catch (error) {
       console.error(`[addRecording] Failed to save blob:`, error);
-      throw error;
+      // Continue anyway - at least save metadata
     }
     
     const newRecording: LocalRecording = {
@@ -108,10 +90,10 @@ export function useLocalRecordings() {
       createdAt: new Date().toISOString(),
     };
     
-    // Update localStorage directly and trigger re-render
+    // Update recordings list
     setRecordings((prev) => {
       const updated = [newRecording, ...prev];
-      console.log(`[addRecording] Recordings updated, count: ${updated.length}`);
+      console.log(`[addRecording] Updated list, new count: ${updated.length}`);
       return updated;
     });
     
