@@ -26,8 +26,8 @@ export function HomePage({ locale }: HomePageProps) {
   // Topic state
   const [topic, setTopic] = useState<string | null>(null);
   
-  // Local storage (IndexedDB)
-  const { recordings, isLoading: isLoadingRecordings, addRecording, removeRecording } = useLocalRecordings();
+  // Local storage (metadata in localStorage, blobs in IndexedDB)
+  const { recordings, addRecording, removeRecording } = useLocalRecordings();
 
   // PWA install
   const { isInstallable, install } = usePWAInstall();
@@ -63,12 +63,9 @@ export function HomePage({ locale }: HomePageProps) {
   const handleRecordingComplete = useCallback(async (blob: Blob, url: string, duration: number, format: 'mp4' | 'webm') => {
     const currentTopic = topicRef.current;
     const currentType = recordingTypeRef.current;
-    const title = currentTopic || `Recording ${new Date().toLocaleString()}`;
 
     await addRecording({
-      title,
       topic: currentTopic,
-      topicCategory: null,
       type: currentType,
       format,
       duration,
@@ -100,10 +97,13 @@ export function HomePage({ locale }: HomePageProps) {
   }, [recorder]);
 
   // Filter recordings by search query
+  // Helper to get display name for a recording
+  const getDisplayName = (r: typeof recordings[0]) => 
+    r.topic || `Recording ${new Date(r.createdAt).toLocaleString()}`;
+
   const filteredRecordings = searchQuery.trim()
     ? recordings.filter(r => 
-        r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (r.topic && r.topic.toLowerCase().includes(searchQuery.toLowerCase()))
+        getDisplayName(r).toLowerCase().includes(searchQuery.toLowerCase())
       )
     : recordings;
 
@@ -285,7 +285,7 @@ export function HomePage({ locale }: HomePageProps) {
         />
 
         {/* Recordings List */}
-        {isMounted && (isLoadingRecordings || recordings.length > 0) && (
+        {isMounted && recordings.length > 0 && (
           <div className="mt-6">
             <div className="flex items-center justify-between gap-4 mb-3">
               <h2 className="text-lg font-semibold text-slate-300">
@@ -318,11 +318,7 @@ export function HomePage({ locale }: HomePageProps) {
               </div>
             </div>
             
-            {isLoadingRecordings ? (
-              <div className="glass-card p-8 flex items-center justify-center">
-                <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
-              </div>
-            ) : paginatedRecordings.length === 0 ? (
+            {paginatedRecordings.length === 0 ? (
               <div className="glass-card p-8 text-center text-slate-400">
                 {t('recordings.noResults')}
               </div>
@@ -357,7 +353,7 @@ export function HomePage({ locale }: HomePageProps) {
 
                       {/* Info */}
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-sm truncate">{recording.title}</h3>
+                        <h3 className="font-medium text-sm truncate">{getDisplayName(recording)}</h3>
                         <p className="text-xs text-slate-500">{formatDate(recording.createdAt)}</p>
                       </div>
 
@@ -372,7 +368,7 @@ export function HomePage({ locale }: HomePageProps) {
 
                       {/* Share button */}
                       <button
-                        onClick={(e) => handleShare(recording.id, recording.title, e)}
+                        onClick={(e) => handleShare(recording.id, getDisplayName(recording), e)}
                         className="p-1.5 rounded-lg hover:bg-blue-500/20 hover:text-blue-400 transition-all"
                         title={t('common.share')}
                       >

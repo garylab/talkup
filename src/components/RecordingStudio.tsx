@@ -4,6 +4,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { Mic, Video, Pause, Play, Square, Circle, Plus, Undo2, RefreshCcw, Maximize2, Minimize2, Settings, X } from 'lucide-react';
 import { cn, formatDuration } from '@/lib/utils';
 import { api } from '@/lib/api';
+import { useSettings } from '@/hooks/useSettings';
 import type { RecordingType } from '@/types';
 import type { RecorderState } from '@/hooks/useRecorder';
 
@@ -58,13 +59,23 @@ export function RecordingStudio({
   const [customTopic, setCustomTopic] = useState('');
   const [isMaximized, setIsMaximized] = useState(false);
   
-  // Settings state
+  // Settings from localStorage
+  const { 
+    settings, 
+    setRecordMode, 
+    setSelectedAudioDevice, 
+    setSelectedVideoDevice 
+  } = useSettings();
+  
+  // Local UI state
   const [showSettings, setShowSettings] = useState(false);
-  const [recordMode, setRecordMode] = useState<RecordingType>('video');
   const [audioDevices, setAudioDevices] = useState<MediaDeviceOption[]>([]);
   const [videoDevices, setVideoDevices] = useState<MediaDeviceOption[]>([]);
-  const [selectedAudioDevice, setSelectedAudioDevice] = useState<string>('');
-  const [selectedVideoDevice, setSelectedVideoDevice] = useState<string>('');
+  
+  // Derived values from settings
+  const recordMode = settings.recordMode;
+  const selectedAudioDevice = settings.selectedAudioDevice;
+  const selectedVideoDevice = settings.selectedVideoDevice;
 
   // Set media stream on video elements
   useEffect(() => {
@@ -355,36 +366,36 @@ export function RecordingStudio({
 
           {/* IDLE STATE: Topic selection */}
           {isIdle && !isStopped && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-4 md:p-6">
+            <div className="absolute inset-0 flex flex-col items-center justify-center px-4 py-6 md:p-6">
               {/* No topic - show selection buttons */}
               {!topic && !isCreatingTopic && (
                 <div className="text-center">
-                  <p className="text-slate-400 mb-4 md:mb-6 text-base md:text-lg">{t('topic.question')}</p>
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-2 md:gap-3">
+                  <p className="text-slate-400 mb-3 md:mb-6 text-sm md:text-lg">{t('topic.question')}</p>
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-1.5 md:gap-3">
                     <button
                       onClick={handleGetTopic}
                       disabled={isLoadingTopic}
                       className={cn(
-                        'flex items-center gap-1.5 md:gap-2 px-4 py-2 md:px-6 md:py-3 rounded-lg md:rounded-xl font-medium text-sm md:text-base',
+                        'flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-6 md:py-3 rounded-lg md:rounded-xl font-medium text-xs md:text-base',
                         'bg-gradient-to-r from-amber-400 to-orange-500 text-black',
                         'hover:from-amber-500 hover:to-orange-600',
                         'transition-all hover:shadow-lg hover:shadow-orange-500/25',
                         'disabled:opacity-50 disabled:cursor-not-allowed'
                       )}
                     >
-                      <RefreshCcw className={cn('w-4 h-4 md:w-5 md:h-5', isLoadingTopic && 'animate-spin')} />
+                      <RefreshCcw className={cn('w-3.5 h-3.5 md:w-5 md:h-5', isLoadingTopic && 'animate-spin')} />
                       {t('topic.getTopic')}
                     </button>
-                    <span className="text-slate-500 text-sm md:text-base">{t('topic.or')}</span>
+                    <span className="text-slate-500 text-xs md:text-base">{t('topic.or')}</span>
                     <button
                       onClick={() => setIsCreatingTopic(true)}
                       className={cn(
-                        'flex items-center gap-1.5 md:gap-2 px-4 py-2 md:px-6 md:py-3 rounded-lg md:rounded-xl font-medium text-sm md:text-base',
+                        'flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-6 md:py-3 rounded-lg md:rounded-xl font-medium text-xs md:text-base',
                         'bg-white/10 border border-white/20',
                         'hover:bg-white/20 transition-all'
                       )}
                     >
-                      <Plus className="w-4 h-4 md:w-5 md:h-5" />
+                      <Plus className="w-3.5 h-3.5 md:w-5 md:h-5" />
                       {t('topic.create')}
                     </button>
                   </div>

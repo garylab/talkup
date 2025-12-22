@@ -1,41 +1,38 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { 
-  saveRecording, 
-  getAllRecordings, 
-  deleteRecording, 
-  updateRecording 
-} from '@/lib/indexedDB';
+import { saveBlob, deleteBlob } from '@/lib/indexedDB';
+import { uuid7 } from '@/lib/utils';
 
+// Generic localStorage hook - hydration safe
 export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((prev: T) => T)) => void] {
-  // Get initial value from localStorage or use provided initial value
-  const [storedValue, setStoredValue] = useState<T>(() => {
-    if (typeof window === 'undefined') {
-      return initialValue;
-    }
+  // Always start with initialValue to avoid hydration mismatch
+  const [storedValue, setStoredValue] = useState<T>(initialValue);
+  const [isHydrated, setIsHydrated] = useState(false);
 
+  // Read from localStorage after mount (client-side only)
+  useEffect(() => {
     try {
       const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
+      if (item) {
+        setStoredValue(JSON.parse(item));
+      }
     } catch (error) {
       console.warn(`Error reading localStorage key "${key}":`, error);
-      return initialValue;
     }
-  });
+    setIsHydrated(true);
+  }, [key]);
 
-  // Update localStorage when value changes
+  // Write to localStorage when value changes (but only after hydration)
   useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
+    if (!isHydrated) return;
 
     try {
       window.localStorage.setItem(key, JSON.stringify(storedValue));
     } catch (error) {
       console.warn(`Error setting localStorage key "${key}":`, error);
     }
-  }, [key, storedValue]);
+  }, [key, storedValue, isHydrated]);
 
   const setValue = useCallback((value: T | ((prev: T) => T)) => {
     setStoredValue((prev) => {
@@ -47,25 +44,20 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T 
   return [storedValue, setValue];
 }
 
-// Local recording storage - now using IndexedDB
+// ============ Recording Types & Hook ============
+
 export interface LocalRecording {
   id: string;
-  title: string;
   topic: string | null;
-  topicCategory: string | null;
   type: 'video' | 'audio';
   format: 'mp4' | 'webm';
   duration: number;
-  size: number; // File size in bytes
+  size: number;
   createdAt: string;
-  synced: boolean;
 }
 
-// Input type for adding recordings (includes blob)
 export interface AddRecordingInput {
-  title: string;
   topic: string | null;
-  topicCategory: string | null;
   type: 'video' | 'audio';
   format: 'mp4' | 'webm';
   duration: number;
@@ -73,58 +65,37 @@ export interface AddRecordingInput {
 }
 
 export function useLocalRecordings() {
-  const [recordings, setRecordings] = useState<LocalRecording[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Load recordings from IndexedDB on mount
-  useEffect(() => {
-    let mounted = true;
-    
-    async function loadRecordings() {
-      try {
-        const data = await getAllRecordings();
-        if (mounted) {
-          setRecordings(data);
-        }
-      } catch (error) {
-        console.error('Failed to load recordings:', error);
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    loadRecordings();
-    
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const [recordings, setRecordings] = useLocalStorage<LocalRecording[]>('talkup-recordings', []);
 
   const addRecording = useCallback(async (input: AddRecordingInput) => {
-    const newRecording = await saveRecording(input);
+    const id = uuid7();
+    
+    // Save blob to IndexedDB
+    await saveBlob(id, input.blob);
+    
+    const newRecording: LocalRecording = {
+      id,
+      topic: input.topic,
+      type: input.type,
+      format: input.format,
+      duration: input.duration,
+      size: input.blob.size,
+      createdAt: new Date().toISOString(),
+    };
+    
     setRecordings((prev) => [newRecording, ...prev]);
     return newRecording;
-  }, []);
+  }, [setRecordings]);
 
   const removeRecording = useCallback(async (id: string) => {
-    await deleteRecording(id);
+    // Delete blob from IndexedDB
+    await deleteBlob(id);
     setRecordings((prev) => prev.filter((r) => r.id !== id));
-  }, []);
-
-  const markAsSynced = useCallback(async (id: string) => {
-    await updateRecording(id, { synced: true });
-    setRecordings((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, synced: true } : r))
-    );
-  }, []);
+  }, [setRecordings]);
 
   return {
     recordings,
-    isLoading,
     addRecording,
     removeRecording,
-    markAsSynced,
   };
 }
