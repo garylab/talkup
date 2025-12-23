@@ -20,13 +20,12 @@ interface UseRecorderReturn {
   error: string | null;
   recordingType: RecordingType | null;
   recordingFormat: RecordingFormat | null;
-  startRecording: (type: RecordingType, audioDeviceId?: string, videoDeviceId?: string) => Promise<void>;
+  startRecording: (type: RecordingType, audioDeviceId?: string, facingMode?: string) => Promise<void>;
   pauseRecording: () => void;
   resumeRecording: () => void;
   stopRecording: () => void;
   resetRecording: () => void;
-  switchAudioDevice: (deviceId: string) => Promise<void>;
-  switchVideoDevice: (deviceId: string) => Promise<void>;
+  switchCamera: (useFrontCamera: boolean) => Promise<void>;
 }
 
 // Detect if browser supports MP4 recording (Safari)
@@ -130,29 +129,23 @@ export function useRecorder({ onDataAvailable, onRecordingComplete }: UseRecorde
     }
   }, []);
 
-  const startRecording = useCallback(async (type: RecordingType, audioDeviceId?: string, videoDeviceId?: string) => {
+  const startRecording = useCallback(async (type: RecordingType, _audioDeviceId?: string, facingMode?: string) => {
     try {
       setError(null);
       chunksRef.current = [];
       setRecordingType(type);
 
-      // Build audio constraints - iOS Safari doesn't like 'exact' for deviceId
-      const audioConstraints: MediaTrackConstraints | boolean = audioDeviceId 
-        ? { deviceId: audioDeviceId }
-        : true;
+      // Always use default microphone
+      const audioConstraints: MediaTrackConstraints | boolean = true;
       
-      // Build video constraints - keep it simple for iOS compatibility
+      // Build video constraints with facingMode
       let videoConstraints: MediaTrackConstraints | boolean = false;
       if (type === 'video') {
         videoConstraints = {
-          facingMode: 'user',
+          facingMode: facingMode || 'user',
           width: { ideal: 1280 },
           height: { ideal: 720 },
         };
-        // Only add deviceId if provided
-        if (videoDeviceId) {
-          videoConstraints.deviceId = videoDeviceId;
-        }
       }
 
       const constraints: MediaStreamConstraints = {
@@ -203,59 +196,20 @@ export function useRecorder({ onDataAvailable, onRecordingComplete }: UseRecorde
     }
   }, [onDataAvailable, startTimer]);
 
-  // Switch audio device while recording
-  const switchAudioDevice = useCallback(async (deviceId: string) => {
-    if (!mediaStream || (state !== 'recording' && state !== 'paused')) {
-      return;
-    }
-
-    try {
-      console.log('[useRecorder] Switching audio device to:', deviceId);
-      
-      // Get new audio track
-      const newStream = await navigator.mediaDevices.getUserMedia({
-        audio: { deviceId },
-      });
-      const newAudioTrack = newStream.getAudioTracks()[0];
-      
-      if (!newAudioTrack) {
-        console.error('[useRecorder] No audio track from new device');
-        return;
-      }
-
-      // Get old audio track
-      const oldAudioTrack = mediaStream.getAudioTracks()[0];
-      
-      // Remove old track and add new one to the stream
-      if (oldAudioTrack) {
-        mediaStream.removeTrack(oldAudioTrack);
-        oldAudioTrack.stop();
-      }
-      mediaStream.addTrack(newAudioTrack);
-
-      // Force React to re-render with updated stream
-      setMediaStream(mediaStream);
-      
-      console.log('[useRecorder] Audio device switched successfully');
-    } catch (err) {
-      console.error('[useRecorder] Failed to switch audio device:', err);
-    }
-  }, [mediaStream, state]);
-
-  // Switch video device while recording
-  const switchVideoDevice = useCallback(async (deviceId: string) => {
+  // Switch camera (front/back) while recording
+  const switchCamera = useCallback(async (useFrontCamera: boolean) => {
     if (!mediaStream || recordingType !== 'video' || (state !== 'recording' && state !== 'paused')) {
       return;
     }
 
     try {
-      console.log('[useRecorder] Switching video device to:', deviceId);
+      const facingMode = useFrontCamera ? 'user' : 'environment';
+      console.log('[useRecorder] Switching camera to:', facingMode);
       
-      // Get new video track
+      // Get new video track with different facing mode
       const newStream = await navigator.mediaDevices.getUserMedia({
         video: {
-          deviceId,
-          facingMode: 'user',
+          facingMode,
           width: { ideal: 1280 },
           height: { ideal: 720 },
         },
@@ -263,7 +217,7 @@ export function useRecorder({ onDataAvailable, onRecordingComplete }: UseRecorde
       const newVideoTrack = newStream.getVideoTracks()[0];
       
       if (!newVideoTrack) {
-        console.error('[useRecorder] No video track from new device');
+        console.error('[useRecorder] No video track from new camera');
         return;
       }
 
@@ -278,12 +232,11 @@ export function useRecorder({ onDataAvailable, onRecordingComplete }: UseRecorde
       mediaStream.addTrack(newVideoTrack);
 
       // Trigger re-render by creating a new reference
-      // This is needed because mutating the stream doesn't trigger React updates
       setMediaStream(new MediaStream(mediaStream.getTracks()));
       
-      console.log('[useRecorder] Video device switched successfully');
+      console.log('[useRecorder] Camera switched successfully');
     } catch (err) {
-      console.error('[useRecorder] Failed to switch video device:', err);
+      console.error('[useRecorder] Failed to switch camera:', err);
     }
   }, [mediaStream, recordingType, state]);
 
@@ -348,7 +301,6 @@ export function useRecorder({ onDataAvailable, onRecordingComplete }: UseRecorde
     resumeRecording,
     stopRecording,
     resetRecording,
-    switchAudioDevice,
-    switchVideoDevice,
+    switchCamera,
   };
 }
