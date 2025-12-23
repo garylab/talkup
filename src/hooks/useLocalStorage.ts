@@ -69,15 +69,21 @@ export function useLocalRecordings() {
 
   const addRecording = useCallback(async (input: AddRecordingInput): Promise<LocalRecording> => {
     const id = uuid7();
-    console.log(`[addRecording] Starting save for ${id}`);
+    const sizeMB = (input.blob.size / 1024 / 1024).toFixed(2);
+    console.log(`[addRecording] Starting save for ${id}, size: ${sizeMB}MB, type: ${input.type}`);
     
+    let blobSaved = false;
     try {
-      // Save blob to IndexedDB
+      // Save blob to OPFS/IndexedDB
       await saveBlob(id, input.blob);
-      console.log(`[addRecording] Blob saved to IndexedDB: ${id}`);
+      console.log(`[addRecording] Blob saved successfully: ${id}`);
+      blobSaved = true;
     } catch (error) {
       console.error(`[addRecording] Failed to save blob:`, error);
-      // Continue anyway - at least save metadata
+      // On iOS, alert the user that the recording may not be available
+      if (typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)) {
+        console.error('[addRecording] iOS blob save failed - recording may not be playable');
+      }
     }
     
     const newRecording: LocalRecording = {
@@ -86,14 +92,14 @@ export function useLocalRecordings() {
       type: input.type,
       format: input.format,
       duration: input.duration,
-      size: input.blob.size,
+      size: blobSaved ? input.blob.size : 0, // Set size to 0 if save failed
       createdAt: new Date().toISOString(),
     };
     
     // Update recordings list
     setRecordings((prev) => {
       const updated = [newRecording, ...prev];
-      console.log(`[addRecording] Updated list, new count: ${updated.length}`);
+      console.log(`[addRecording] Updated list, new count: ${updated.length}, blob saved: ${blobSaved}`);
       return updated;
     });
     

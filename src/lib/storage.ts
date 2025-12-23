@@ -20,6 +20,21 @@ function hasOPFS(): boolean {
     'getDirectory' in navigator.storage;
 }
 
+// Request persistent storage (helps prevent iOS from clearing data)
+async function requestPersistentStorage(): Promise<void> {
+  try {
+    if (navigator.storage && navigator.storage.persist) {
+      const isPersisted = await navigator.storage.persist();
+      console.log(`[Storage] Persistent storage: ${isPersisted ? 'granted' : 'denied'}`);
+    }
+  } catch (e) {
+    console.warn('[Storage] Could not request persistent storage:', e);
+  }
+}
+
+// Initialize persistent storage on first use
+let persistenceRequested = false;
+
 let dbPromise: Promise<IDBDatabase> | null = null;
 
 function openDB(): Promise<IDBDatabase> {
@@ -58,22 +73,41 @@ function openDB(): Promise<IDBDatabase> {
 // ============ OPFS Storage (Primary - for all modern browsers) ============
 
 async function saveBlobOPFS(id: string, blob: Blob): Promise<void> {
-  console.log(`[OPFS] Saving: ${id}, size: ${blob.size}`);
+  console.log(`[OPFS] Saving: ${id}, size: ${blob.size}, type: ${blob.type}`);
   
-  const root = await navigator.storage.getDirectory();
-  const fileHandle = await root.getFileHandle(id, { create: true });
+  // Request persistent storage on first save
+  if (!persistenceRequested) {
+    persistenceRequested = true;
+    await requestPersistentStorage();
+  }
   
-  const writable = await fileHandle.createWritable();
-  await writable.write(blob);
-  await writable.close();
-  
-  // Store metadata
-  const metaHandle = await root.getFileHandle(`${id}.meta`, { create: true });
-  const metaWritable = await metaHandle.createWritable();
-  await metaWritable.write(JSON.stringify({ type: blob.type, size: blob.size }));
-  await metaWritable.close();
-  
-  console.log(`[OPFS] Saved: ${id}`);
+  try {
+    const root = await navigator.storage.getDirectory();
+    const fileHandle = await root.getFileHandle(id, { create: true });
+    
+    const writable = await fileHandle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+    
+    // Store metadata
+    const metaHandle = await root.getFileHandle(`${id}.meta`, { create: true });
+    const metaWritable = await metaHandle.createWritable();
+    await metaWritable.write(JSON.stringify({ type: blob.type, size: blob.size }));
+    await metaWritable.close();
+    
+    // Verify the file was saved correctly
+    const verifyHandle = await root.getFileHandle(id);
+    const verifyFile = await verifyHandle.getFile();
+    console.log(`[OPFS] Saved and verified: ${id}, saved size: ${verifyFile.size}`);
+    
+    if (verifyFile.size !== blob.size) {
+      console.error(`[OPFS] Size mismatch! Expected ${blob.size}, got ${verifyFile.size}`);
+      throw new Error('File size mismatch after save');
+    }
+  } catch (error) {
+    console.error(`[OPFS] Save failed for ${id}:`, error);
+    throw error;
+  }
 }
 
 async function getBlobOPFS(id: string): Promise<Blob | null> {
@@ -82,7 +116,7 @@ async function getBlobOPFS(id: string): Promise<Blob | null> {
   try {
     const root = await navigator.storage.getDirectory();
     
-    // Get metadata
+    // Get metadata for MIME type
     let type = 'application/octet-stream';
     try {
       const metaHandle = await root.getFileHandle(`${id}.meta`);
@@ -91,18 +125,26 @@ async function getBlobOPFS(id: string): Promise<Blob | null> {
       const meta = JSON.parse(metaText);
       type = meta.type || type;
     } catch {
-      // No metadata file
+      // No metadata file, continue with default type
     }
     
-    // Get file
+    // Get file - File extends Blob, return it directly for better memory efficiency
     const fileHandle = await root.getFileHandle(id);
     const file = await fileHandle.getFile();
-    const blob = new Blob([await file.arrayBuffer()], { type });
     
-    console.log(`[OPFS] Retrieved: ${id}, size: ${blob.size}`);
-    return blob;
-  } catch {
-    console.log(`[OPFS] Not found: ${id}`);
+    console.log(`[OPFS] Retrieved: ${id}, size: ${file.size}, type: ${type}`);
+    
+    // If the file already has the correct type, return it directly
+    // File is a subclass of Blob, so this works
+    if (file.type === type || file.type) {
+      return file;
+    }
+    
+    // Only create a new Blob if we need to set the type
+    // Use slice() instead of arrayBuffer() to avoid loading entire file into memory
+    return file.slice(0, file.size, type);
+  } catch (error) {
+    console.error(`[OPFS] Failed to get ${id}:`, error);
     return null;
   }
 }
@@ -226,28 +268,66 @@ async function deleteBlobIndexedDB(id: string): Promise<void> {
 // ============ Public API ============
 // Strategy: OPFS first (95%+ browsers), IndexedDB fallback
 
+// Log storage quota info for debugging
+async function logStorageQuota(): Promise<void> {
+  try {
+    if (navigator.storage && navigator.storage.estimate) {
+      const estimate = await navigator.storage.estimate();
+      const usedMB = Math.round((estimate.usage || 0) / 1024 / 1024);
+      const quotaMB = Math.round((estimate.quota || 0) / 1024 / 1024);
+      console.log(`[Storage] Quota: ${usedMB}MB used / ${quotaMB}MB available`);
+    }
+  } catch {
+    // Ignore
+  }
+}
+
 export async function saveBlob(id: string, blob: Blob): Promise<void> {
+  console.log(`[Storage] Saving blob: ${id}, size: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
+  await logStorageQuota();
+  
   if (hasOPFS()) {
     try {
-      return await saveBlobOPFS(id, blob);
+      await saveBlobOPFS(id, blob);
+      console.log(`[Storage] Successfully saved to OPFS: ${id}`);
+      return;
     } catch (error) {
       console.warn('[Storage] OPFS failed, falling back to IndexedDB:', error);
     }
   }
-  return saveBlobIndexedDB(id, blob);
+  
+  try {
+    await saveBlobIndexedDB(id, blob);
+    console.log(`[Storage] Successfully saved to IndexedDB: ${id}`);
+  } catch (error) {
+    console.error('[Storage] All storage methods failed:', error);
+    throw error;
+  }
 }
 
 export async function getBlob(id: string): Promise<Blob | null> {
+  console.log(`[Storage] Getting blob: ${id}`);
+  
   if (hasOPFS()) {
     try {
       const blob = await getBlobOPFS(id);
-      if (blob) return blob;
+      if (blob) {
+        console.log(`[Storage] Found in OPFS: ${id}, size: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
+        return blob;
+      }
     } catch (error) {
       console.warn('[Storage] OPFS get failed, trying IndexedDB:', error);
     }
   }
+  
   // Also check IndexedDB for legacy data
-  return getBlobIndexedDB(id);
+  const blob = await getBlobIndexedDB(id);
+  if (blob) {
+    console.log(`[Storage] Found in IndexedDB: ${id}, size: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
+  } else {
+    console.warn(`[Storage] Blob not found in any storage: ${id}`);
+  }
+  return blob;
 }
 
 export async function deleteBlob(id: string): Promise<void> {
