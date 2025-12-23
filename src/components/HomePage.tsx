@@ -282,7 +282,6 @@ export function HomePage({ locale }: HomePageProps) {
             onResume={recorder.resumeRecording}
             onStop={recorder.stopRecording}
             onReset={recorder.resetRecording}
-            onSwitchCamera={recorder.switchCamera}
             topic={topic}
             onTopicChange={setTopic}
             recordingType={recorder.recordingType || 'video'}

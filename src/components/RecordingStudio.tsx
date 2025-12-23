@@ -19,7 +19,6 @@ interface RecordingStudioProps {
   onResume: () => void;
   onStop: () => void;
   onReset: () => void;
-  onSwitchCamera: (useFrontCamera: boolean) => Promise<void>;
   topic: string | null;
   onTopicChange: (topic: string | null) => void;
   recordingType: RecordingType;
@@ -39,7 +38,6 @@ export function RecordingStudio({
   onResume,
   onStop,
   onReset,
-  onSwitchCamera,
   topic,
   onTopicChange,
   recordingType,
@@ -174,15 +172,13 @@ export function RecordingStudio({
     setIsMaximized(!isMaximized);
   };
 
-  // Flip camera (front/back)
-  const handleFlipCamera = useCallback(async () => {
-    const newUseFront = !useFrontCamera;
-    setUseFrontCamera(newUseFront);
-    // If recording/paused, switch the camera on the active stream
-    if (isRecording || isPaused) {
-      await onSwitchCamera(newUseFront);
-    }
-  }, [useFrontCamera, isRecording, isPaused, onSwitchCamera]);
+  // Flip camera (front/back) - only works before recording starts
+  const handleFlipCamera = useCallback(() => {
+    // Only allow switching when idle (not recording)
+    // MediaRecorder doesn't support track replacement during recording
+    if (!isIdle) return;
+    setUseFrontCamera(prev => !prev);
+  }, [isIdle]);
 
   // Camera flip button component
   const CameraFlipButton = ({ className }: { className?: string }) => (
@@ -218,31 +214,23 @@ export function RecordingStudio({
 
             {/* Topic at top-left */}
             {topic && (
-              <div className="absolute top-6 left-6 max-w-[70%] bg-black/60 backdrop-blur-sm px-4 py-2.5 rounded-xl">
-                <span className="font-semibold text-white text-xl truncate">{topic}</span>
+              <div className="absolute top-6 left-6 max-w-[70%] flex items-center bg-black/60 backdrop-blur-sm px-4 rounded-xl h-10">
+                <span className="font-semibold text-white text-lg truncate">{topic}</span>
               </div>
             )}
 
-            {/* Recording indicator & duration - top right */}
-            <div className="absolute top-6 right-6 flex items-center gap-3">
-              <div className="flex items-center gap-2 bg-black/60 backdrop-blur-sm px-3 py-2 rounded-xl h-10">
-                <Circle
-                  className={cn(
-                    'w-3 h-3 fill-current',
-                    isRecording ? 'text-red-500 animate-pulse' : 'text-yellow-500'
-                  )}
-                />
-                <span className="text-sm font-medium">
-                  {isRecording ? t('recording.rec') : t('recording.paused')}
-                </span>
-              </div>
-              <div className="flex items-center bg-black/60 backdrop-blur-sm px-4 py-2 rounded-xl h-10">
-                <span className="font-mono text-lg">{formatDuration(duration)}</span>
-              </div>
+            {/* Duration - top right (with recording indicator dot) */}
+            <div className="absolute top-6 right-6 flex items-center gap-2 bg-black/60 backdrop-blur-sm px-4 rounded-xl h-10">
+              <Circle
+                className={cn(
+                  'w-3 h-3 fill-current',
+                  isRecording ? 'text-red-500 animate-pulse' : 'text-yellow-500'
+                )}
+              />
+              <span className="font-mono text-lg">{formatDuration(duration)}</span>
             </div>
 
-            {/* Camera flip button - bottom left (only if multiple cameras) */}
-            {cameraCount > 1 && <CameraFlipButton className="absolute bottom-6 left-6" />}
+            {/* Camera flip button removed from fullscreen - only available before recording */}
 
             {/* Minimize button - bottom right */}
             <button
@@ -427,35 +415,28 @@ export function RecordingStudio({
             </div>
           )}
 
-          {/* RECORDING/PAUSED: Topic at top-left (small) */}
+          {/* RECORDING/PAUSED: Topic at top-left */}
           {isActive && topic && (
-            <div className="absolute top-3 left-3 max-w-[60%] bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-lg">
-              <span className="font-semibold text-white text-sm truncate">{topic}</span>
+            <div className="absolute top-3 left-3 max-w-[60%] flex items-center bg-black/60 backdrop-blur-sm px-2.5 rounded-lg h-7">
+              <span className="font-semibold text-white text-xs truncate">{topic}</span>
             </div>
           )}
 
-          {/* Recording indicator & duration - top right */}
+          {/* Duration - top right (with recording indicator dot) */}
           {isActive && (
-            <div className="absolute top-3 right-3 flex items-center gap-2">
-              <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2.5 py-1.5 rounded-lg h-7">
-                <Circle
-                  className={cn(
-                    'w-2.5 h-2.5 fill-current',
-                    isRecording ? 'text-red-500 animate-pulse' : 'text-yellow-500'
-                  )}
-                />
-                <span className="text-xs font-medium">
-                  {isRecording ? t('recording.rec') : t('recording.paused')}
-                </span>
-              </div>
-              <div className="flex items-center bg-black/60 backdrop-blur-sm px-2.5 py-1.5 rounded-lg h-7">
-                <span className="font-mono text-xs">{formatDuration(duration)}</span>
-              </div>
+            <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm px-2.5 rounded-lg h-7">
+              <Circle
+                className={cn(
+                  'w-2 h-2 fill-current',
+                  isRecording ? 'text-red-500 animate-pulse' : 'text-yellow-500'
+                )}
+              />
+              <span className="font-mono text-xs">{formatDuration(duration)}</span>
             </div>
           )}
 
-          {/* Camera flip button - bottom left (during video recording, only if multiple cameras) */}
-          {isActive && recordingType === 'video' && cameraCount > 1 && (
+          {/* Camera flip button - only before recording starts, if multiple cameras */}
+          {isIdle && recordMode === 'video' && cameraCount > 1 && (
             <CameraFlipButton className="absolute bottom-3 left-3" />
           )}
 

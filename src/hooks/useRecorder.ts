@@ -65,7 +65,7 @@ function getBestCodec(type: RecordingType): { mimeType: string; format: Recordin
 export function useRecorder({ onDataAvailable, onRecordingComplete }: UseRecorderOptions = {}): UseRecorderReturn {
   const [state, setState] = useState<RecorderState>('idle');
   const [duration, setDuration] = useState(0);
-  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
+  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null); // For preview
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
   const [recordedUrl, setRecordedUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -73,6 +73,7 @@ export function useRecorder({ onDataAvailable, onRecordingComplete }: UseRecorde
   const [recordingFormat, setRecordingFormat] = useState<RecordingFormat | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordingStreamRef = useRef<MediaStream | null>(null); // The stream being recorded (don't modify!)
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
@@ -107,6 +108,9 @@ export function useRecorder({ onDataAvailable, onRecordingComplete }: UseRecorde
       }
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (recordingStreamRef.current) {
+        recordingStreamRef.current.getTracks().forEach(track => track.stop());
       }
       if (recordedUrlRef.current) {
         URL.revokeObjectURL(recordedUrlRef.current);
@@ -156,6 +160,10 @@ export function useRecorder({ onDataAvailable, onRecordingComplete }: UseRecorde
       console.log('[useRecorder] Requesting media with constraints:', JSON.stringify(constraints));
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       console.log('[useRecorder] Got media stream');
+      
+      // Store the recording stream (don't modify this while recording!)
+      recordingStreamRef.current = stream;
+      // Also use it for preview initially
       setMediaStream(stream);
 
       // Get best codec for this browser (MP4 for Safari, WebM for others)
@@ -197,44 +205,39 @@ export function useRecorder({ onDataAvailable, onRecordingComplete }: UseRecorde
   }, [onDataAvailable, startTimer]);
 
   // Switch camera (front/back) while recording
+  // This creates a NEW preview stream without affecting the recording stream.
+  // The recording continues from the original camera.
   const switchCamera = useCallback(async (useFrontCamera: boolean) => {
-    if (!mediaStream || recordingType !== 'video' || (state !== 'recording' && state !== 'paused')) {
+    if (recordingType !== 'video' || (state !== 'recording' && state !== 'paused')) {
       return;
     }
 
     try {
       const facingMode = useFrontCamera ? 'user' : 'environment';
-      console.log('[useRecorder] Switching camera to:', facingMode);
+      console.log('[useRecorder] Switching camera preview to:', facingMode);
       
-      // Get new video track with different facing mode
-      const newStream = await navigator.mediaDevices.getUserMedia({
+      // Stop old preview stream if it's different from recording stream
+      if (mediaStream && mediaStream !== recordingStreamRef.current) {
+        mediaStream.getTracks().forEach(track => track.stop());
+      }
+      
+      // Get new stream for preview with different facing mode
+      const newPreviewStream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode,
           width: { ideal: 1280 },
           height: { ideal: 720 },
         },
+        audio: false, // Audio comes from recording stream
       });
-      const newVideoTrack = newStream.getVideoTracks()[0];
       
-      if (!newVideoTrack) {
-        console.error('[useRecorder] No video track from new camera');
-        return;
-      }
-
-      // Get old video track
-      const oldVideoTrack = mediaStream.getVideoTracks()[0];
+      console.log('[useRecorder] Got new preview stream');
       
-      // Remove old track and add new one to the stream
-      if (oldVideoTrack) {
-        mediaStream.removeTrack(oldVideoTrack);
-        oldVideoTrack.stop();
-      }
-      mediaStream.addTrack(newVideoTrack);
-
-      // Trigger re-render by creating a new reference
-      setMediaStream(new MediaStream(mediaStream.getTracks()));
+      // Set the new preview stream (recording stream is untouched)
+      setMediaStream(newPreviewStream);
       
-      console.log('[useRecorder] Camera switched successfully');
+      console.log('[useRecorder] Camera preview switched successfully');
+      console.log('[useRecorder] Note: Recording continues from original camera');
     } catch (err) {
       console.error('[useRecorder] Failed to switch camera:', err);
     }
@@ -262,15 +265,30 @@ export function useRecorder({ onDataAvailable, onRecordingComplete }: UseRecorde
       // Capture final duration before stopping
       finalDurationRef.current = duration;
       mediaRecorderRef.current.stop();
-      mediaStream?.getTracks().forEach(track => track.stop());
+      
+      // Stop the recording stream
+      recordingStreamRef.current?.getTracks().forEach(track => track.stop());
+      recordingStreamRef.current = null;
+      
+      // Stop preview stream if different from recording stream
+      if (mediaStream && mediaStream !== recordingStreamRef.current) {
+        mediaStream.getTracks().forEach(track => track.stop());
+      }
+      
       setState('stopped');
       stopTimer();
     }
   }, [state, mediaStream, stopTimer, duration]);
 
   const resetRecording = useCallback(() => {
+    // Stop preview stream
     if (mediaStream) {
       mediaStream.getTracks().forEach(track => track.stop());
+    }
+    // Stop recording stream if still active
+    if (recordingStreamRef.current) {
+      recordingStreamRef.current.getTracks().forEach(track => track.stop());
+      recordingStreamRef.current = null;
     }
     if (recordedUrl) {
       URL.revokeObjectURL(recordedUrl);
