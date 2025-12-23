@@ -55,7 +55,6 @@ export function RecordingStudio({
   const [isMaximized, setIsMaximized] = useState(false);
   const [useFrontCamera, setUseFrontCamera] = useState(true);
   const [cameraCount, setCameraCount] = useState(0);
-  const [previewStream, setPreviewStream] = useState<MediaStream | null>(null);
   
   // Settings from localStorage
   const { settings, setRecordMode } = useSettings();
@@ -110,71 +109,11 @@ export function RecordingStudio({
       }
     };
     countCameras();
-    // Also update count when mediaStream or previewStream changes (permissions granted)
-    if (mediaStream || previewStream) {
+    // Also update count when mediaStream changes (permissions granted)
+    if (mediaStream) {
       countCameras();
     }
-  }, [mediaStream, previewStream]);
-
-  // Start/stop preview stream when video mode is selected in idle state
-  useEffect(() => {
-    let isMounted = true;
-    
-    const startPreview = async () => {
-      if (state !== 'idle' || recordMode !== 'video') {
-        // Stop preview if not in idle video mode
-        if (previewStream) {
-          previewStream.getTracks().forEach(track => track.stop());
-          setPreviewStream(null);
-        }
-        return;
-      }
-      
-      // Don't start if we already have a preview
-      if (previewStream) return;
-      
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: useFrontCamera ? 'user' : 'environment',
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-          },
-          audio: false,
-        });
-        
-        if (isMounted && state === 'idle' && recordMode === 'video') {
-          setPreviewStream(stream);
-        } else {
-          // Component unmounted or state changed, stop the stream
-          stream.getTracks().forEach(track => track.stop());
-        }
-      } catch (err) {
-        console.log('[RecordingStudio] Could not start preview:', err);
-      }
-    };
-    
-    startPreview();
-    
-    return () => {
-      isMounted = false;
-    };
-  }, [state, recordMode, useFrontCamera]); // Re-run when camera changes
-
-  // Stop preview when recording starts
-  useEffect(() => {
-    if (state !== 'idle' && previewStream) {
-      previewStream.getTracks().forEach(track => track.stop());
-      setPreviewStream(null);
-    }
-  }, [state, previewStream]);
-
-  // Set preview stream on video element
-  useEffect(() => {
-    if (previewStream && videoRef.current && state === 'idle') {
-      videoRef.current.srcObject = previewStream;
-    }
-  }, [previewStream, state]);
+  }, [mediaStream]);
 
   const isRecording = state === 'recording';
   const isPaused = state === 'paused';
@@ -235,15 +174,11 @@ export function RecordingStudio({
 
   // Flip camera (front/back) - only works before recording starts
   const handleFlipCamera = useCallback(() => {
-    if (!isIdle) return; // Can't switch during recording
-    // Stop current preview stream
-    if (previewStream) {
-      previewStream.getTracks().forEach(track => track.stop());
-      setPreviewStream(null);
-    }
-    // Toggle camera - useEffect will start new preview
+    // Only allow switching when idle (not recording)
+    // MediaRecorder doesn't support track replacement during recording
+    if (!isIdle) return;
     setUseFrontCamera(prev => !prev);
-  }, [isIdle, previewStream]);
+  }, [isIdle]);
 
   // Camera flip button component
   const CameraFlipButton = ({ className }: { className?: string }) => (
@@ -295,7 +230,7 @@ export function RecordingStudio({
               <span className="font-mono text-lg">{formatDuration(duration)}</span>
             </div>
 
-            {/* Camera flip button removed - can't switch during recording */}
+            {/* Camera flip button removed from fullscreen - only available before recording */}
 
             {/* Minimize button - bottom right */}
             <button
@@ -358,20 +293,8 @@ export function RecordingStudio({
           className="relative bg-slate-950 rounded-xl overflow-hidden mb-4 flex items-center justify-center"
           style={{ aspectRatio: '16/9' }}
         >
-          {/* Video preview - before recording (preview stream) */}
-          {isIdle && recordMode === 'video' && previewStream && (
-            <video
-              ref={videoRef}
-              autoPlay
-              muted
-              playsInline
-              className="w-full h-full object-cover"
-              style={{ transform: useFrontCamera ? 'scaleX(-1)' : 'none' }}
-            />
-          )}
-
-          {/* Video preview - during recording (media stream) */}
-          {recordingType === 'video' && mediaStream && !isStopped && !isIdle && (
+          {/* Video preview during recording */}
+          {recordingType === 'video' && mediaStream && !isStopped && (
             <video
               ref={videoRef}
               autoPlay
@@ -564,20 +487,8 @@ export function RecordingStudio({
                 {t('recording.start')}
               </button>
 
-              {/* Video/Audio Mode Toggle */}
+              {/* Audio/Video Mode Toggle */}
               <div className="flex items-center bg-white/[0.04] rounded-xl p-1">
-                <button
-                  onClick={() => setRecordMode('video')}
-                  className={cn(
-                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                    recordMode === 'video'
-                      ? 'bg-violet-500 text-white'
-                      : 'text-slate-400 hover:text-white'
-                  )}
-                >
-                  <Video className="w-4 h-4" />
-                  <span className="hidden sm:inline">{t('recording.video')}</span>
-                </button>
                 <button
                   onClick={() => setRecordMode('audio')}
                   className={cn(
@@ -589,6 +500,18 @@ export function RecordingStudio({
                 >
                   <Mic className="w-4 h-4" />
                   <span className="hidden sm:inline">{t('recording.audio')}</span>
+                </button>
+                <button
+                  onClick={() => setRecordMode('video')}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                    recordMode === 'video'
+                      ? 'bg-violet-500 text-white'
+                      : 'text-slate-400 hover:text-white'
+                  )}
+                >
+                  <Video className="w-4 h-4" />
+                  <span className="hidden sm:inline">{t('recording.video')}</span>
                 </button>
               </div>
             </div>

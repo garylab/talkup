@@ -9,7 +9,7 @@ export interface AppSettings {
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
-  recordMode: 'video',
+  recordMode: 'audio',
 };
 
 export function useSettings() {
