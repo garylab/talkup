@@ -1,5 +1,5 @@
 // Update this version number to force cache refresh
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const CACHE_NAME = `talkup-${CACHE_VERSION}`;
 
 // Files to pre-cache (keep minimal for faster updates)
@@ -21,8 +21,8 @@ self.addEventListener('install', (event) => {
     })
   );
   
-  // Force the waiting service worker to become active
-  self.skipWaiting();
+  // DON'T call skipWaiting() here - let the app control when to activate
+  // The app will show an "Update available" banner and user can click to update
 });
 
 // Activate event - clean up old caches and take control immediately
