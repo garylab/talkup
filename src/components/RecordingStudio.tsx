@@ -55,6 +55,7 @@ export function RecordingStudio({
   const [isMaximized, setIsMaximized] = useState(false);
   const [useFrontCamera, setUseFrontCamera] = useState(true);
   const [cameraCount, setCameraCount] = useState(0);
+  const [previewStream, setPreviewStream] = useState<MediaStream | null>(null);
   
   // Settings from localStorage
   const { settings, setRecordMode } = useSettings();
@@ -109,11 +110,72 @@ export function RecordingStudio({
       }
     };
     countCameras();
-    // Also update count when mediaStream changes (permissions granted)
-    if (mediaStream) {
+    // Also update count when mediaStream or previewStream changes (permissions granted)
+    if (mediaStream || previewStream) {
       countCameras();
     }
-  }, [mediaStream]);
+  }, [mediaStream, previewStream]);
+
+  // Start/stop preview stream when video mode is selected in idle state
+  useEffect(() => {
+    let isMounted = true;
+    
+    const startPreview = async () => {
+      if (state !== 'idle' || recordMode !== 'video') {
+        // Stop preview if not in idle video mode
+        if (previewStream) {
+          previewStream.getTracks().forEach(track => track.stop());
+          setPreviewStream(null);
+        }
+        return;
+      }
+      
+      // Don't start if we already have a preview
+      if (previewStream) return;
+      
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: useFrontCamera ? 'user' : 'environment',
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+          audio: false,
+        });
+        
+        if (isMounted && state === 'idle' && recordMode === 'video') {
+          setPreviewStream(stream);
+        } else {
+          // Component unmounted or state changed, stop the stream
+          stream.getTracks().forEach(track => track.stop());
+        }
+      } catch (err) {
+        console.log('[RecordingStudio] Could not start preview:', err);
+      }
+    };
+    
+    startPreview();
+    
+    return () => {
+      isMounted = false;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, recordMode, useFrontCamera]);
+
+  // Stop preview when recording starts
+  useEffect(() => {
+    if (state !== 'idle' && previewStream) {
+      previewStream.getTracks().forEach(track => track.stop());
+      setPreviewStream(null);
+    }
+  }, [state, previewStream]);
+
+  // Set preview stream on video element
+  useEffect(() => {
+    if (previewStream && videoRef.current && state === 'idle') {
+      videoRef.current.srcObject = previewStream;
+    }
+  }, [previewStream, state]);
 
   const isRecording = state === 'recording';
   const isPaused = state === 'paused';
@@ -175,10 +237,14 @@ export function RecordingStudio({
   // Flip camera (front/back) - only works before recording starts
   const handleFlipCamera = useCallback(() => {
     // Only allow switching when idle (not recording)
-    // MediaRecorder doesn't support track replacement during recording
     if (!isIdle) return;
+    // Stop current preview stream - useEffect will start new one with new camera
+    if (previewStream) {
+      previewStream.getTracks().forEach(track => track.stop());
+      setPreviewStream(null);
+    }
     setUseFrontCamera(prev => !prev);
-  }, [isIdle]);
+  }, [isIdle, previewStream]);
 
   // Camera flip button component
   const CameraFlipButton = ({ className }: { className?: string }) => (
@@ -293,8 +359,20 @@ export function RecordingStudio({
           className="relative bg-slate-950 rounded-xl overflow-hidden mb-4 flex items-center justify-center"
           style={{ aspectRatio: '16/9' }}
         >
-          {/* Video preview during recording */}
-          {recordingType === 'video' && mediaStream && !isStopped && (
+          {/* Video preview - before recording (preview stream) */}
+          {isIdle && recordMode === 'video' && previewStream && (
+            <video
+              ref={videoRef}
+              autoPlay
+              muted
+              playsInline
+              className="w-full h-full object-cover"
+              style={{ transform: useFrontCamera ? 'scaleX(-1)' : 'none' }}
+            />
+          )}
+
+          {/* Video preview - during recording (media stream) */}
+          {!isIdle && recordingType === 'video' && mediaStream && !isStopped && (
             <video
               ref={videoRef}
               autoPlay
