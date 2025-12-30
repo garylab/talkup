@@ -415,7 +415,7 @@ export function RecordingStudio({
         </div>
 
         {/* Bottom controls bar - floating over preview, above navbar */}
-        <div className="absolute bottom-[80px] left-0 right-0 px-4 py-2 z-30">
+        <div className="absolute left-0 right-0 px-4 py-2 z-30" style={{ bottom: 'calc(76px + env(safe-area-inset-bottom, 0px))' }}>
           {/* Idle state controls */}
           {isIdle && (
             <div className="flex items-center justify-center">

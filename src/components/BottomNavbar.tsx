@@ -20,8 +20,8 @@ export function BottomNavbar({ activeTab, onTabChange, recordingsCount = 0, t }:
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-zinc-900/95 backdrop-blur-lg border-t border-white/[0.06] safe-bottom">
-      <div className="flex items-center justify-around h-14 max-w-lg mx-auto">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-zinc-900/95 backdrop-blur-lg border-t border-white/[0.06]" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
         {tabs.map(({ id, icon: Icon, label, badge }) => {
           const isActive = activeTab === id;
           return (
