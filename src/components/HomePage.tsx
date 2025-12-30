@@ -127,6 +127,7 @@ export function HomePage({ locale }: HomePageProps) {
               recordingType={recorder.recordingType || 'video'}
               t={t}
               topics={topics}
+              locale={locale}
             />
           </div>
         )}

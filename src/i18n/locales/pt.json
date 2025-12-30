@@ -68,5 +68,12 @@
     "install": "Instalar App",
     "updateAvailable": "Nova versão disponível!",
     "update": "Atualizar"
+  },
+  "news": {
+    "title": "Notícias Relacionadas",
+    "relatedTo": "Notícias sobre",
+    "loading": "Carregando notícias...",
+    "noNews": "Nenhuma notícia encontrada",
+    "tryAgain": "Tente novamente mais tarde"
   }
 }

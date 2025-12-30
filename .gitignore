@@ -18,7 +18,9 @@ build/
 .env
 .env.local
 .env.*.local
+.dev.vars
 secrets-production.yaml
+.wrangler/
 
 # IDE
 .idea/

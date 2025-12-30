@@ -68,5 +68,12 @@
     "install": "App Installieren",
     "updateAvailable": "Neue Version verfügbar!",
     "update": "Aktualisieren"
+  },
+  "news": {
+    "title": "Verwandte Nachrichten",
+    "relatedTo": "Nachrichten zu",
+    "loading": "Nachrichten werden geladen...",
+    "noNews": "Keine Nachrichten gefunden",
+    "tryAgain": "Bitte versuchen Sie es später erneut"
   }
 }

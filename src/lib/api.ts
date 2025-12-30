@@ -1,5 +1,36 @@
 import type { Topic } from '@/types';
 
+export interface NewsItem {
+  title: string;
+  source: string;
+  date: string;
+  summary: string;
+  url: string;
+}
+
+export interface NewsResponse {
+  news: NewsItem[];
+  error?: string;
+  message?: string;
+}
+
+// Get API base URL dynamically
+function getApiBaseUrl(): string {
+  if (typeof window === 'undefined') {
+    // Server-side: use relative URL
+    return '';
+  }
+  
+  // Client-side: check if we're on localhost
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    // Local development - use wrangler dev server
+    return 'http://localhost:8787';
+  }
+  
+  // Production - use same origin
+  return window.location.origin;
+}
+
 class LocalApi {
   // Get a random topic from provided topics array
   async getRandomTopic(topics: string[]): Promise<Topic> {
@@ -10,6 +41,29 @@ class LocalApi {
       id: String(randomIndex),
       title: topics[randomIndex],
     };
+  }
+
+  // Get news for a topic
+  async getNews(topic: string, language: string): Promise<NewsResponse> {
+    try {
+      const baseUrl = getApiBaseUrl();
+      const response = await fetch(
+        `${baseUrl}/api/news?topic=${encodeURIComponent(topic)}&lang=${language}`,
+        { 
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to fetch news:', error);
+      return { news: [], error: 'Failed to fetch news' };
+    }
   }
 }
 

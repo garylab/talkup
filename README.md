@@ -2,121 +2,16 @@
 
 A speech practice app that gives you random topics to talk about. Record yourself, playback, and improve your speaking skills.
 
-## Features
 
-- 🎲 **Random Topics** - 339 topics from [TED Topics](https://www.ted.com/topics)
-- ✏️ **Custom Topics** - Create your own topics to practice
-- 🎥 **Video Recording** - Record video with your camera
-- 🎤 **Audio Recording** - Record audio only
-- ⏸️ **Pause/Resume** - Control your recording flow
-- 💾 **Local Storage** - Recordings saved in your browser (IndexedDB)
-- 🌐 **Multi-language** - English and Simplified Chinese support
-- 📱 **PWA** - Install as app on mobile/desktop
-- 🔍 **Search** - Find recordings by title or topic
-
-## Languages
-
-- 🇬🇧 English (`/`)
-- 🇨🇳 简体中文 (`/zh`)
-
-## Tech Stack
-
-- **Framework**: Next.js 14 (App Router, Static Export)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **Icons**: Lucide React
-- **Storage**: IndexedDB for recordings, LocalStorage for settings
-- **Deployment**: Cloudflare Pages
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+ 
-- npm or pnpm
-
-### Installation
-
+## Run in local
+1. Setup .dev.vars
 ```bash
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
+SERPER_API_KEY=your_actual_serper_key
+OPENAI_API_KEY=your_actual_openai_key
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-### Build for Production
-
+2. Start:
 ```bash
-npm run build
-```
-
-## Deployment to Cloudflare Pages
-
-### Option 1: Git Integration (Recommended)
-
-1. Push your code to GitHub/GitLab
-2. Go to [Cloudflare Pages](https://pages.cloudflare.com)
-3. Create a new project and connect your repository
-4. Configure build settings:
-   - **Build command**: `npm run build`
-   - **Build output directory**: `out`
-
-### Option 2: Direct Upload
-
-```bash
-npm run deploy
-```
-
-## Project Structure
-
-```
-├── src/
-│   ├── app/                 # Next.js pages
-│   │   ├── page.tsx         # English home page
-│   │   └── zh/page.tsx      # Chinese home page
-│   ├── components/          # React components
-│   │   ├── HomePage.tsx
-│   │   ├── RecordingStudio.tsx
-│   │   └── LanguageSwitcher.tsx
-│   ├── data/                # Topic data
-│   │   ├── topics-en.json   # English topics (339)
-│   │   └── topics-zh.json   # Chinese topics (339)
-│   ├── i18n/                # Internationalization
-│   │   ├── index.ts
-│   │   └── locales/
-│   │       ├── en.json
-│   │       └── zh.json
-│   ├── hooks/               # Custom React hooks
-│   │   ├── useRecorder.ts
-│   │   └── useLocalStorage.ts
-│   ├── lib/                 # Utilities
-│   │   ├── api.ts
-│   │   ├── indexedDB.ts
-│   │   └── utils.ts
-│   └── types/
-├── public/
-│   ├── manifest.json        # PWA manifest
-│   ├── sw.js               # Service worker
-│   └── icons/              # App icons
-├── out/                     # Built static files
-├── next.config.js
-├── wrangler.toml
-└── tailwind.config.js
-```
-
-## Topics Source
-
-Topics are sourced from [TED Topics](https://www.ted.com/topics) - 339 topics covering:
-- Science & Technology
-- Health & Psychology
-- Environment & Nature
-- Business & Economics
-- Society & Culture
-- And many more!
-
-## License
-
-MIT
+ npx wrangler dev --local
+ npm run dev
+ ```

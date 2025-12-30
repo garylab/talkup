@@ -68,5 +68,12 @@
     "install": "安装应用",
     "updateAvailable": "发现新版本！",
     "update": "更新"
+  },
+  "news": {
+    "title": "相关新闻",
+    "relatedTo": "相关新闻",
+    "loading": "加载中...",
+    "noNews": "暂无相关新闻",
+    "tryAgain": "请稍后再试"
   }
 }

@@ -4,3 +4,12 @@ main = "worker/index.ts"
 
 [assets]
 directory = "out"
+
+# KV Namespace for caching
+[[kv_namespaces]]
+binding = "TALKUP_CACHE"
+id = "6a73447c687d464a91b48d01f5678979"
+
+# Environment variables (set via wrangler secret)
+# SERPER_API_KEY - API key for Serper Google News search
+# OPENAI_API_KEY - API key for OpenAI (summarization & translation)

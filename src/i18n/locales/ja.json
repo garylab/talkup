@@ -68,5 +68,12 @@
     "install": "アプリをインストール",
     "updateAvailable": "新しいバージョンがあります！",
     "update": "更新"
+  },
+  "news": {
+    "title": "関連ニュース",
+    "relatedTo": "関連ニュース",
+    "loading": "ニュースを読み込み中...",
+    "noNews": "関連ニュースがありません",
+    "tryAgain": "後でもう一度お試しください"
   }
 }

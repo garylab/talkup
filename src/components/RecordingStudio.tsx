@@ -1,7 +1,8 @@
 'use client';
 
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { Mic, Video, Pause, Play, Square, Circle, Plus, Undo2, RefreshCcw, Maximize2, Minimize2, SwitchCamera } from 'lucide-react';
+import { Mic, Video, Pause, Play, Square, Circle, Plus, Undo2, RefreshCcw, Maximize2, Minimize2, SwitchCamera, ChevronRight } from 'lucide-react';
+import { NewsPanel } from './NewsPanel';
 import { cn, formatDuration } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
@@ -25,6 +26,7 @@ interface RecordingStudioProps {
   // i18n
   t: (key: string) => string;
   topics: string[];
+  locale: string;
 }
 
 export function RecordingStudio({
@@ -43,6 +45,7 @@ export function RecordingStudio({
   recordingType,
   t,
   topics,
+  locale,
 }: RecordingStudioProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const fullscreenVideoRef = useRef<HTMLVideoElement>(null);
@@ -52,6 +55,7 @@ export function RecordingStudio({
   const [isLoadingTopic, setIsLoadingTopic] = useState(false);
   const [isCreatingTopic, setIsCreatingTopic] = useState(false);
   const [customTopic, setCustomTopic] = useState('');
+  const [showNewsPanel, setShowNewsPanel] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
   const [useFrontCamera, setUseFrontCamera] = useState(true);
   const [cameraCount, setCameraCount] = useState(0);
@@ -435,9 +439,20 @@ export function RecordingStudio({
               ) : (
                 /* Topic display - always show */
                 <div className="text-center animate-fade-in px-4">
-                  <h2 className="text-2xl md:text-4xl font-bold mb-5">
-                    {topic || (isLoadingTopic ? '...' : '')}
-                  </h2>
+                  <div className="flex items-center justify-center gap-2 mb-5">
+                    <h2 className="text-2xl md:text-4xl font-bold">
+                      {topic || (isLoadingTopic ? '...' : '')}
+                    </h2>
+                    {topic && (
+                      <button
+                        onClick={() => setShowNewsPanel(true)}
+                        className="p-1.5 rounded-full hover:bg-white/10 active:scale-95 transition-all"
+                        title={t('news.title')}
+                      >
+                        <ChevronRight className="w-6 h-6 text-zinc-400" />
+                      </button>
+                    )}
+                  </div>
                   <div className="flex items-center justify-center gap-2">
                     <button
                       onClick={handleGetTopic}
@@ -587,6 +602,16 @@ export function RecordingStudio({
           )}
         </div>
       </div>
+
+      {/* News Panel */}
+      {showNewsPanel && topic && (
+        <NewsPanel
+          topic={topic}
+          language={locale}
+          onClose={() => setShowNewsPanel(false)}
+          t={t}
+        />
+      )}
     </>
   );
 }
