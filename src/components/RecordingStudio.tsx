@@ -420,7 +420,7 @@ export function RecordingStudio({
           {isIdle && (
             <div className="flex items-center justify-center">
               {/* Video/Audio switcher - right side */}
-              <div className="absolute right-4 flex items-center gap-1 p-1 rounded-full bg-black/40 backdrop-blur">
+              <div className="absolute right-4 flex items-center gap-1 p-1 rounded-full bg-zinc-800/80 backdrop-blur ring-1 ring-white/20">
                 <button
                   onClick={() => setRecordMode('audio')}
                   className={cn(
