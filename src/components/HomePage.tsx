@@ -10,7 +10,6 @@ import { useRecorder } from '@/hooks/useRecorder';
 import { useLocalRecordings } from '@/hooks/useLocalStorage';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { useServiceWorker } from '@/hooks/useServiceWorker';
-import { cn } from '@/lib/utils';
 import { t as translate, getTopics, Locale } from '@/i18n';
 import type { RecordingType } from '@/types';
 
@@ -84,10 +83,10 @@ export function HomePage({ locale }: HomePageProps) {
   }, [recorder]);
 
   return (
-    <main className="min-h-[100dvh] pb-16 safe-top">
+    <main className="h-[100dvh] flex flex-col">
       {/* Update notification - top banner */}
       {isUpdateAvailable && (
-        <div className="bg-blue-600 px-4 py-2.5 flex items-center justify-between gap-3 animate-fade-in">
+        <div className="bg-blue-600 px-4 py-2.5 flex items-center justify-between gap-3 animate-fade-in flex-shrink-0">
           <span className="text-sm font-medium">{t('pwa.updateAvailable')}</span>
           <button
             onClick={updateServiceWorker}
@@ -99,60 +98,55 @@ export function HomePage({ locale }: HomePageProps) {
         </div>
       )}
 
-      <div className="app-container py-4">
-        {/* Home Tab - Recording Studio */}
+      {/* Main content area */}
+      <div className="flex-1 overflow-hidden">
+        {/* Home Tab - Recording Studio (full screen camera style, extends under navbar) */}
         {activeTab === 'home' && (
-          <div className="animate-fade-in">
-            {/* Header */}
-            <header className="flex items-center justify-between mb-4">
-              <h1 className="text-xl font-bold tracking-tight">
-                <span className="text-gradient">{t('app.title')}</span>
-              </h1>
-            </header>
-
-            {/* Recording Studio */}
-            <RecordingStudio
-              state={recorder.state}
-              duration={recorder.duration}
-              mediaStream={recorder.mediaStream}
-              recordedUrl={recorder.recordedUrl}
-              error={recorder.error}
-              onStart={handleStart}
-              onPause={recorder.pauseRecording}
-              onResume={recorder.resumeRecording}
-              onStop={recorder.stopRecording}
-              onReset={recorder.resetRecording}
-              topic={topic}
-              onTopicChange={setTopic}
-              recordingType={recorder.recordingType || 'video'}
-              t={t}
-              topics={topics}
-              locale={locale}
-            />
-          </div>
+          <RecordingStudio
+            state={recorder.state}
+            duration={recorder.duration}
+            mediaStream={recorder.mediaStream}
+            recordedUrl={recorder.recordedUrl}
+            error={recorder.error}
+            onStart={handleStart}
+            onPause={recorder.pauseRecording}
+            onResume={recorder.resumeRecording}
+            onStop={recorder.stopRecording}
+            onReset={recorder.resetRecording}
+            topic={topic}
+            onTopicChange={setTopic}
+            recordingType={recorder.recordingType || 'video'}
+            t={t}
+            topics={topics}
+            locale={locale}
+          />
         )}
 
         {/* Recordings Tab */}
         {activeTab === 'recordings' && isHydrated && (
-          <div className="animate-fade-in">
-            <RecordingsView
-              recordings={recordings}
-              onRemove={removeRecording}
-              onClearAll={clearAllRecordings}
-              t={t}
-            />
+          <div className="h-full overflow-y-auto animate-fade-in pb-16">
+            <div className="app-container py-4">
+              <RecordingsView
+                recordings={recordings}
+                onRemove={removeRecording}
+                onClearAll={clearAllRecordings}
+                t={t}
+              />
+            </div>
           </div>
         )}
 
         {/* Settings Tab */}
         {activeTab === 'settings' && (
-          <div className="animate-fade-in">
-            <SettingsView
-              locale={locale}
-              isInstallable={isInstallable}
-              onInstall={install}
-              t={t}
-            />
+          <div className="h-full overflow-y-auto animate-fade-in pb-16">
+            <div className="app-container py-4">
+              <SettingsView
+                locale={locale}
+                isInstallable={isInstallable}
+                onInstall={install}
+                t={t}
+              />
+            </div>
           </div>
         )}
       </div>

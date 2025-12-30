@@ -1,9 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Mic, Video, Globe, ChevronRight, Check, Info, Download } from 'lucide-react';
+import { Globe, ChevronRight, Check, Info, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useSettings } from '@/hooks/useSettings';
 import { Locale, locales, localeNames, localeFlags } from '@/i18n';
 
 interface SettingsViewProps {
@@ -15,8 +14,6 @@ interface SettingsViewProps {
 
 export function SettingsView({ locale, isInstallable, onInstall, t }: SettingsViewProps) {
   const router = useRouter();
-  const { settings, setRecordMode } = useSettings();
-  const recordMode = settings.recordMode;
 
   const handleLanguageChange = (newLocale: Locale) => {
     if (newLocale !== locale) {
@@ -28,53 +25,6 @@ export function SettingsView({ locale, isInstallable, onInstall, t }: SettingsVi
   return (
     <div className="pb-4">
       <h2 className="text-lg font-semibold mb-4">{t('nav.settings')}</h2>
-
-      {/* Recording Mode Section */}
-      <div className="mb-6">
-        <h3 className="section-title mb-3">{t('settings.recordingMode')}</h3>
-        <div className="surface">
-          <button
-            onClick={() => setRecordMode('audio')}
-            className={cn(
-              'w-full flex items-center gap-3 px-4 py-3.5 transition-colors',
-              'border-b border-white/[0.06]'
-            )}
-          >
-            <div className={cn(
-              'w-9 h-9 rounded-xl flex items-center justify-center',
-              recordMode === 'audio' ? 'bg-rose-500/20' : 'bg-zinc-800'
-            )}>
-              <Mic className={cn('w-5 h-5', recordMode === 'audio' ? 'text-rose-400' : 'text-zinc-400')} />
-            </div>
-            <div className="flex-1 text-left">
-              <p className="font-medium">{t('recording.audio')}</p>
-              <p className="text-xs text-zinc-500">{t('settings.audioDesc')}</p>
-            </div>
-            {recordMode === 'audio' && (
-              <Check className="w-5 h-5 text-rose-400" />
-            )}
-          </button>
-          
-          <button
-            onClick={() => setRecordMode('video')}
-            className="w-full flex items-center gap-3 px-4 py-3.5 transition-colors"
-          >
-            <div className={cn(
-              'w-9 h-9 rounded-xl flex items-center justify-center',
-              recordMode === 'video' ? 'bg-violet-500/20' : 'bg-zinc-800'
-            )}>
-              <Video className={cn('w-5 h-5', recordMode === 'video' ? 'text-violet-400' : 'text-zinc-400')} />
-            </div>
-            <div className="flex-1 text-left">
-              <p className="font-medium">{t('recording.video')}</p>
-              <p className="text-xs text-zinc-500">{t('settings.videoDesc')}</p>
-            </div>
-            {recordMode === 'video' && (
-              <Check className="w-5 h-5 text-violet-400" />
-            )}
-          </button>
-        </div>
-      </div>
 
       {/* Language Section */}
       <div className="mb-6">
@@ -139,4 +89,3 @@ export function SettingsView({ locale, isInstallable, onInstall, t }: SettingsVi
     </div>
   );
 }
-

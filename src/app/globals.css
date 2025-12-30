@@ -248,6 +248,19 @@
   }
 }
 
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.25s ease-out;
+}
+
 /* Native-style audio player */
 audio::-webkit-media-controls-panel {
   background: var(--bg-elevated);

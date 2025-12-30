@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { Mic, Video, Pause, Play, Square, Circle, Plus, Undo2, RefreshCcw, Maximize2, Minimize2, SwitchCamera, ChevronRight } from 'lucide-react';
+import { Mic, Video, Pause, Play, Square, Plus, Undo2, RefreshCcw, SwitchCamera, ChevronRight } from 'lucide-react';
 import { NewsPanel } from './NewsPanel';
 import { cn, formatDuration } from '@/lib/utils';
 import { api } from '@/lib/api';
@@ -48,59 +48,26 @@ export function RecordingStudio({
   locale,
 }: RecordingStudioProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const fullscreenVideoRef = useRef<HTMLVideoElement>(null);
   const playbackRef = useRef<HTMLVideoElement | HTMLAudioElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   
   const [isLoadingTopic, setIsLoadingTopic] = useState(false);
   const [isCreatingTopic, setIsCreatingTopic] = useState(false);
   const [customTopic, setCustomTopic] = useState('');
   const [showNewsPanel, setShowNewsPanel] = useState(false);
-  const [isMaximized, setIsMaximized] = useState(false);
   const [useFrontCamera, setUseFrontCamera] = useState(true);
   const [cameraCount, setCameraCount] = useState(0);
   const [previewStream, setPreviewStream] = useState<MediaStream | null>(null);
   
   // Settings from localStorage
-  const { settings } = useSettings();
+  const { settings, setRecordMode } = useSettings();
   const recordMode = settings.recordMode;
 
   // Set media stream on video elements
   useEffect(() => {
-    if (mediaStream && recordingType === 'video') {
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
-      if (fullscreenVideoRef.current) {
-        fullscreenVideoRef.current.srcObject = mediaStream;
-      }
+    if (mediaStream && recordingType === 'video' && videoRef.current) {
+      videoRef.current.srcObject = mediaStream;
     }
   }, [mediaStream, recordingType]);
-
-  // Also update fullscreen video when maximized state changes
-  useEffect(() => {
-    if (isMaximized && fullscreenVideoRef.current && mediaStream && recordingType === 'video') {
-      fullscreenVideoRef.current.srcObject = mediaStream;
-    }
-  }, [isMaximized, mediaStream, recordingType]);
-
-  // Handle ESC key to exit maximized mode
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isMaximized) {
-        setIsMaximized(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isMaximized]);
-
-  // Reset maximized state when recording stops
-  useEffect(() => {
-    if (state === 'stopped' || state === 'idle') {
-      setIsMaximized(false);
-    }
-  }, [state]);
 
   // Count available cameras
   useEffect(() => {
@@ -114,7 +81,6 @@ export function RecordingStudio({
       }
     };
     countCameras();
-    // Also update count when mediaStream or previewStream changes (permissions granted)
     if (mediaStream || previewStream) {
       countCameras();
     }
@@ -126,7 +92,6 @@ export function RecordingStudio({
     
     const startPreview = async () => {
       if (state !== 'idle' || recordMode !== 'video') {
-        // Stop preview if not in idle video mode
         if (previewStream) {
           previewStream.getTracks().forEach(track => track.stop());
           setPreviewStream(null);
@@ -134,7 +99,6 @@ export function RecordingStudio({
         return;
       }
       
-      // Don't start if we already have a preview
       if (previewStream) return;
       
       try {
@@ -150,7 +114,6 @@ export function RecordingStudio({
         if (isMounted && state === 'idle' && recordMode === 'video') {
           setPreviewStream(stream);
         } else {
-          // Component unmounted or state changed, stop the stream
           stream.getTracks().forEach(track => track.stop());
         }
       } catch (err) {
@@ -229,20 +192,12 @@ export function RecordingStudio({
   };
 
   const handleStart = () => {
-    // Pass facingMode preference via a special marker
-    // We use undefined for deviceIds to use defaults, but pass facingMode info
     onStart(recordMode, undefined, useFrontCamera ? 'user' : 'environment');
-  };
-
-  const toggleMaximize = () => {
-    setIsMaximized(!isMaximized);
   };
 
   // Flip camera (front/back) - only works before recording starts
   const handleFlipCamera = useCallback(() => {
-    // Only allow switching when idle (not recording)
     if (!isIdle) return;
-    // Stop current preview stream - useEffect will start new one with new camera
     if (previewStream) {
       previewStream.getTracks().forEach(track => track.stop());
       setPreviewStream(null);
@@ -252,130 +207,48 @@ export function RecordingStudio({
 
   return (
     <>
-      {/* Fullscreen overlay when maximized */}
-      {isMaximized && (
-        <div className="fixed inset-0 z-50 bg-black flex flex-col">
-          {/* Maximized video container */}
-          <div className="flex-1 relative">
-            {recordingType === 'video' && mediaStream && (
-              <video
-                ref={fullscreenVideoRef}
-                autoPlay
-                muted
-                playsInline
-                className="w-full h-full object-contain"
-                style={{ transform: useFrontCamera ? 'scaleX(-1)' : 'none' }}
-              />
-            )}
-
-            {/* Topic at top-left */}
-            {topic && (
-              <div className="absolute top-6 left-6 max-w-[70%]">
-                <span className="inline-block px-4 py-2 bg-black/70 backdrop-blur rounded-xl font-semibold text-lg">{topic}</span>
-              </div>
-            )}
-
-            {/* Duration - top right */}
-            <div className="absolute top-6 right-6 flex items-center gap-2 px-4 py-2 bg-black/70 backdrop-blur rounded-xl">
-              <Circle
-                className={cn(
-                  'w-3 h-3 fill-current',
-                  isRecording ? 'text-red-500 animate-pulse' : 'text-yellow-500'
-                )}
-              />
-              <span className="font-mono text-lg tabular-nums">{formatDuration(duration)}</span>
-            </div>
-
-            {/* Minimize button - bottom right */}
-            <button
-              onClick={toggleMaximize}
-              className="absolute bottom-6 right-6 p-3 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 transition-all"
-              title="Exit fullscreen (ESC)"
-            >
-              <Minimize2 className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Controls at bottom */}
-          <div className="p-6 bg-black/80 flex items-center justify-center gap-3">
-            {isRecording && (
-              <>
-                <button
-                  onClick={onPause}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-amber-500 text-black active:scale-[0.97] transition-transform"
-                >
-                  <Pause className="w-5 h-5" />
-                  {t('recording.pause')}
-                </button>
-                <button
-                  onClick={onStop}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-red-500 active:scale-[0.97] transition-transform"
-                >
-                  <Square className="w-5 h-5" />
-                  {t('recording.stop')}
-                </button>
-              </>
-            )}
-
-            {isPaused && (
-              <>
-                <button
-                  onClick={onResume}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-emerald-500 active:scale-[0.97] transition-transform"
-                >
-                  <Play className="w-5 h-5" />
-                  {t('recording.resume')}
-                </button>
-                <button
-                  onClick={onStop}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-red-500 active:scale-[0.97] transition-transform"
-                >
-                  <Square className="w-5 h-5" />
-                  {t('recording.stop')}
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Normal view */}
-      <div className={cn('surface', isMaximized && 'invisible')}>
-        {/* Recording Screen */}
-        <div 
-          ref={containerRef}
-          className="relative bg-black overflow-hidden flex items-center justify-center"
-          style={{ aspectRatio: '16/9' }}
-        >
-          {/* Video preview - before recording (preview stream) */}
+      {/* Camera-style full screen layout */}
+      <div className="relative h-full bg-black overflow-hidden">
+        {/* Main viewfinder area - full height */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          {/* Video preview - idle with preview stream */}
           {isIdle && recordMode === 'video' && previewStream && (
             <video
               ref={videoRef}
               autoPlay
               muted
               playsInline
-              className="w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full object-cover"
               style={{ transform: useFrontCamera ? 'scaleX(-1)' : 'none' }}
             />
           )}
 
-          {/* Video preview - during recording (media stream) */}
+          {/* Video during recording */}
           {!isIdle && recordingType === 'video' && mediaStream && !isStopped && (
             <video
               ref={videoRef}
               autoPlay
               muted
               playsInline
-              className="w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full object-cover"
               style={{ transform: useFrontCamera ? 'scaleX(-1)' : 'none' }}
             />
           )}
 
+          {/* Audio mode background */}
+          {(recordMode === 'audio' || recordingType === 'audio') && !isStopped && (
+            <div className="absolute inset-0 bg-gradient-to-b from-zinc-900 to-black" />
+          )}
+
           {/* Audio visualization during recording */}
           {recordingType === 'audio' && isActive && (
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-rose-500/20 to-pink-600/20 flex items-center justify-center animate-pulse">
-                <Mic className="w-12 h-12 text-rose-400" />
+            <div className="relative z-10 flex flex-col items-center gap-4">
+              <div className={cn(
+                'w-32 h-32 rounded-full flex items-center justify-center',
+                'bg-white/10',
+                isRecording && 'animate-pulse'
+              )}>
+                <Mic className="w-16 h-16 text-white" />
               </div>
             </div>
           )}
@@ -384,32 +257,37 @@ export function RecordingStudio({
           {isStopped && recordedUrl && (
             recordingType === 'video' ? (
               <video
+                key={recordedUrl}
                 ref={playbackRef as React.RefObject<HTMLVideoElement>}
                 src={recordedUrl}
                 controls
-                className="w-full h-full object-contain"
+                playsInline
+                autoPlay
+                muted={false}
+                className="absolute inset-0 w-full h-full object-contain bg-black z-20"
               />
             ) : (
-              <div className="flex flex-col items-center gap-4 w-full px-8">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-rose-500/15 to-pink-600/15 flex items-center justify-center">
-                  <Mic className="w-10 h-10 text-rose-400" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 w-full px-8 z-20 bg-black">
+                <div className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center">
+                  <Mic className="w-12 h-12 text-white" />
                 </div>
                 <audio
+                  key={recordedUrl}
                   ref={playbackRef as React.RefObject<HTMLAudioElement>}
                   src={recordedUrl}
                   controls
-                  className="w-full max-w-2xl"
+                  autoPlay
+                  className="w-full max-w-sm"
                 />
               </div>
             )
           )}
 
-          {/* IDLE STATE: Topic display */}
+          {/* Topic overlay - IDLE state */}
           {isIdle && !isStopped && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center px-4 py-6">
-              {/* Creating custom topic - overlay */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
               {isCreatingTopic ? (
-                <div className="text-center w-full max-w-lg px-2 animate-fade-in">
+                <div className="text-center w-full max-w-sm px-4 animate-fade-in">
                   <p className="text-zinc-400 mb-4 text-sm">{t('topic.enterTopic')}</p>
                   <div className="flex items-center gap-2">
                     <input
@@ -418,53 +296,65 @@ export function RecordingStudio({
                       onChange={(e) => setCustomTopic(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleCreateTopic()}
                       placeholder={t('topic.placeholder')}
-                      className="flex-1 px-4 py-3 rounded-xl text-base bg-zinc-800 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-white/20"
+                      className="flex-1 px-4 py-3 rounded-xl text-base bg-black/60 backdrop-blur placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-white/20"
                       autoFocus
                     />
                     <button
                       onClick={handleCreateTopic}
                       disabled={!customTopic.trim()}
-                      className="px-4 py-3 rounded-xl font-semibold text-sm bg-rose-500 hover:bg-rose-600 disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.97] transition-all"
+                      className="px-4 py-3 rounded-xl font-semibold text-sm bg-white text-zinc-900 disabled:opacity-40 active:scale-95 transition-all"
                     >
                       {t('topic.use')}
                     </button>
                     <button
                       onClick={() => setIsCreatingTopic(false)}
-                      className="p-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 active:scale-[0.97] transition-all"
+                      className="p-3 rounded-xl bg-black/60 backdrop-blur active:scale-95 transition-all"
                     >
                       <Undo2 className="w-5 h-5" />
                     </button>
                   </div>
                 </div>
               ) : (
-                /* Topic display - always show */
                 <div className="text-center animate-fade-in px-4">
-                  <div className="flex items-center justify-center gap-2 mb-5">
-                    <h2 className="text-2xl md:text-4xl font-bold">
-                      {topic || (isLoadingTopic ? '...' : '')}
-                    </h2>
-                    {topic && (
+                  {/* Topic text - clickable */}
+                  <div className="mb-6">
+                    {topic ? (
                       <button
                         onClick={() => setShowNewsPanel(true)}
-                        className="p-1.5 rounded-full hover:bg-white/10 active:scale-95 transition-all"
+                        className="group inline-flex items-center gap-2 active:scale-[0.98] transition-all"
                         title={t('news.title')}
                       >
-                        <ChevronRight className="w-6 h-6 text-zinc-400" />
+                        <span 
+                          className="text-3xl md:text-5xl font-bold max-w-[320px] md:max-w-lg truncate"
+                          style={{ textShadow: '-2px -2px 0 rgba(0,0,0,0.8), 2px -2px 0 rgba(0,0,0,0.8), -2px 2px 0 rgba(0,0,0,0.8), 2px 2px 0 rgba(0,0,0,0.8)' }}
+                        >
+                          {topic}
+                        </span>
+                        <ChevronRight 
+                          className="w-5 h-5 group-hover:translate-x-0.5 transition-all flex-shrink-0"
+                          style={{ filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.8))' }}
+                        />
                       </button>
+                    ) : (
+                      <span className="text-xl md:text-2xl font-bold text-zinc-500">
+                        {isLoadingTopic ? '...' : ''}
+                      </span>
                     )}
                   </div>
-                  <div className="flex items-center justify-center gap-2">
+                  
+                  {/* Topic actions */}
+                  <div className="flex items-center justify-center gap-3">
                     <button
                       onClick={handleGetTopic}
                       disabled={isLoadingTopic}
-                      className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-amber-500 text-black hover:bg-amber-400 disabled:opacity-50 active:scale-[0.97] transition-all"
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium bg-white/10 backdrop-blur hover:bg-white/20 disabled:opacity-50 active:scale-95 transition-all"
                     >
                       <RefreshCcw className={cn('w-4 h-4', isLoadingTopic && 'animate-spin')} />
                       {t('topic.refresh')}
                     </button>
                     <button
                       onClick={() => setIsCreatingTopic(true)}
-                      className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 active:scale-[0.97] transition-all"
+                      className="w-10 h-10 rounded-full bg-white/10 backdrop-blur hover:bg-white/20 flex items-center justify-center active:scale-95 transition-all"
                       title={t('topic.create')}
                     >
                       <Plus className="w-5 h-5" />
@@ -475,130 +365,155 @@ export function RecordingStudio({
             </div>
           )}
 
-          {/* RECORDING/PAUSED: Topic at top-left */}
-          {isActive && topic && (
-            <div className="absolute top-3 left-3 max-w-[60%]">
-              <span className="inline-block px-2.5 py-1 bg-black/70 backdrop-blur rounded-lg text-xs font-semibold truncate">{topic}</span>
-            </div>
-          )}
-
-          {/* Duration - top right (with recording indicator dot) */}
+          {/* Recording overlay - top bar */}
           {isActive && (
-            <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 bg-black/70 backdrop-blur rounded-lg">
-              <Circle
-                className={cn(
-                  'w-2 h-2 fill-current',
-                  isRecording ? 'text-red-500 animate-pulse' : 'text-yellow-500'
-                )}
-              />
-              <span className="font-mono text-xs tabular-nums">{formatDuration(duration)}</span>
+            <div className="absolute top-4 left-0 right-0 px-4 flex items-start justify-between z-10">
+              {/* Topic */}
+              {topic && (
+                <div className="max-w-[60%]">
+                  <span className="inline-block px-3 py-1.5 bg-black/60 backdrop-blur rounded-full text-xs font-medium truncate">
+                    {topic}
+                  </span>
+                </div>
+              )}
+              
+              {/* Duration */}
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-black/60 backdrop-blur rounded-full">
+                <div className={cn(
+                  'w-2 h-2 rounded-full',
+                  isRecording ? 'bg-red-500 animate-pulse' : 'bg-yellow-500'
+                )} />
+                <span className="font-mono text-xs tabular-nums">{formatDuration(duration)}</span>
+              </div>
             </div>
           )}
 
-          {/* Camera flip button - only before recording starts, if multiple cameras */}
+          {/* Stopped state - duration */}
+          {isStopped && (
+            <div className="absolute top-4 right-4 px-3 py-1.5 bg-black/60 backdrop-blur rounded-full">
+              <span className="font-mono text-sm tabular-nums">{formatDuration(duration)}</span>
+            </div>
+          )}
+
+          {/* Camera flip button - top right area */}
           {isIdle && recordMode === 'video' && cameraCount > 1 && (
             <button
               onClick={handleFlipCamera}
-              className="absolute bottom-3 left-3 p-2.5 rounded-full bg-black/70 backdrop-blur hover:bg-black/90 active:scale-95 transition-all"
+              className="absolute top-4 right-4 p-3 rounded-full bg-black/40 backdrop-blur hover:bg-black/60 active:scale-95 transition-all z-10"
               title="Flip camera"
             >
               <SwitchCamera className="w-5 h-5" />
             </button>
           )}
 
-          {/* Maximize button for video recording - bottom right */}
-          {isActive && recordingType === 'video' && (
-            <button
-              onClick={toggleMaximize}
-              className="absolute bottom-3 right-3 p-2 rounded-lg bg-black/70 backdrop-blur hover:bg-black/90 active:scale-95 transition-all"
-              title="Fullscreen"
-            >
-              <Maximize2 className="w-4 h-4" />
-            </button>
-          )}
-
-          {/* Duration for stopped state */}
-          {isStopped && (
-            <div className="absolute top-3 right-3 px-2.5 py-1 bg-black/70 backdrop-blur rounded-lg">
-              <span className="font-mono text-sm tabular-nums">{formatDuration(duration)}</span>
+          {/* Error display */}
+          {error && (
+            <div className="absolute bottom-28 left-4 right-4 p-3 bg-red-500/20 backdrop-blur rounded-xl text-red-400 text-sm text-center z-20">
+              {error}
             </div>
           )}
         </div>
 
-        {/* Error display */}
-        {error && (
-          <div className="mx-4 mt-4 p-3 bg-red-500/10 rounded-xl text-red-400 text-sm">
-            {error}
-          </div>
-        )}
-
-        {/* Controls Toolbar */}
-        <div className="p-4 flex items-center justify-center gap-2">
+        {/* Bottom controls bar - floating over preview, above navbar */}
+        <div className="absolute bottom-[80px] left-0 right-0 px-4 py-2 z-30">
+          {/* Idle state controls */}
           {isIdle && (
-            /* Start Button */
-            <button
-              onClick={handleStart}
-              disabled={!topic}
-              className={cn(
-                'flex items-center gap-2 px-6 py-3 rounded-xl font-semibold',
-                recordMode === 'video'
-                  ? 'bg-violet-500 hover:bg-violet-600'
-                  : 'bg-rose-500 hover:bg-rose-600',
-                'active:scale-[0.97] transition-all',
-                'disabled:opacity-40 disabled:cursor-not-allowed'
-              )}
-            >
-              {recordMode === 'video' ? <Video className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-              {recordMode === 'video' ? t('recording.startVideo') : t('recording.startAudio')}
-            </button>
+            <div className="flex items-center justify-center">
+              {/* Video/Audio switcher - right side */}
+              <div className="absolute right-4 flex items-center gap-1 p-1 rounded-full bg-black/40 backdrop-blur">
+                <button
+                  onClick={() => setRecordMode('audio')}
+                  className={cn(
+                    'p-2 rounded-full transition-all',
+                    recordMode === 'audio' ? 'bg-white/20' : 'hover:bg-white/10'
+                  )}
+                  title={t('recording.audio')}
+                >
+                  <Mic className={cn('w-4 h-4', recordMode === 'audio' ? 'text-white' : 'text-zinc-400')} />
+                </button>
+                <button
+                  onClick={() => setRecordMode('video')}
+                  className={cn(
+                    'p-2 rounded-full transition-all',
+                    recordMode === 'video' ? 'bg-white/20' : 'hover:bg-white/10'
+                  )}
+                  title={t('recording.video')}
+                >
+                  <Video className={cn('w-4 h-4', recordMode === 'video' ? 'text-white' : 'text-zinc-400')} />
+                </button>
+              </div>
+
+              {/* Shutter button - center */}
+              <button
+                onClick={handleStart}
+                disabled={!topic}
+                className={cn(
+                  'w-[72px] h-[72px] rounded-full',
+                  'flex items-center justify-center',
+                  'ring-4 ring-white/80',
+                  'bg-white/10 backdrop-blur',
+                  'active:scale-95 transition-all',
+                  'disabled:opacity-40 disabled:cursor-not-allowed'
+                )}
+              >
+                <div className="w-[56px] h-[56px] rounded-full bg-red-500 flex items-center justify-center">
+                  {recordMode === 'video' ? (
+                    <Video className="w-6 h-6 text-white" />
+                  ) : (
+                    <Mic className="w-6 h-6 text-white" />
+                  )}
+                </div>
+              </button>
+            </div>
           )}
 
+          {/* Recording controls */}
           {isRecording && (
-            <>
+            <div className="flex items-center justify-center gap-4">
               <button
                 onClick={onPause}
-                className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl font-semibold text-sm bg-amber-500 text-black active:scale-[0.97] transition-transform"
+                className="p-4 rounded-full bg-white active:scale-95 transition-all"
               >
-                <Pause className="w-4 h-4" />
-                {t('recording.pause')}
+                <Pause className="w-6 h-6 text-zinc-900" />
               </button>
               <button
                 onClick={onStop}
-                className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl font-semibold text-sm bg-red-500 active:scale-[0.97] transition-transform"
+                className="w-[72px] h-[72px] rounded-full ring-4 ring-white/90 bg-red-500 flex items-center justify-center active:scale-95 transition-all"
               >
-                <Square className="w-4 h-4" />
-                {t('recording.stop')}
+                <Square className="w-8 h-8 text-white fill-white" />
               </button>
-            </>
+            </div>
           )}
 
+          {/* Paused controls */}
           {isPaused && (
-            <>
+            <div className="flex items-center justify-center gap-4">
               <button
                 onClick={onResume}
-                className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl font-semibold text-sm bg-emerald-500 active:scale-[0.97] transition-transform"
+                className="p-4 rounded-full bg-white active:scale-95 transition-all"
               >
-                <Play className="w-4 h-4" />
-                {t('recording.resume')}
+                <Play className="w-6 h-6 text-zinc-900" />
               </button>
               <button
                 onClick={onStop}
-                className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl font-semibold text-sm bg-red-500 active:scale-[0.97] transition-transform"
+                className="w-[72px] h-[72px] rounded-full ring-4 ring-white/90 bg-red-500 flex items-center justify-center active:scale-95 transition-all"
               >
-                <Square className="w-4 h-4" />
-                {t('recording.stop')}
+                <Square className="w-8 h-8 text-white fill-white" />
               </button>
-            </>
+            </div>
           )}
 
+          {/* Stopped controls */}
           {isStopped && (
-            <button
-              onClick={onReset}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm bg-rose-500 hover:bg-rose-600 active:scale-[0.97] transition-all"
-            >
-              <Undo2 className="w-4 h-4" />
-              {t('recording.back')}
-            </button>
+            <div className="flex items-center justify-center">
+              <button
+                onClick={onReset}
+                className="flex items-center gap-2 px-6 py-3 rounded-full font-semibold bg-zinc-800 hover:bg-zinc-700 active:scale-95 transition-all"
+              >
+                <Undo2 className="w-5 h-5" />
+                {t('recording.back')}
+              </button>
+            </div>
           )}
         </div>
       </div>

@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { X, ExternalLink, Loader2, Newspaper } from 'lucide-react';
 import { api, NewsItem } from '@/lib/api';
-import { cn } from '@/lib/utils';
 
 // Request deduplication - store pending requests
 const pendingRequests = new Map<string, Promise<{ news: NewsItem[]; error?: string }>>();
@@ -85,17 +84,17 @@ export function NewsPanel({ topic, language, onClose, t }: NewsPanelProps) {
   }, [topic, language]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+    <div className="fixed inset-0 z-50 flex">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/50"
         onClick={onClose}
       />
       
-      {/* Panel */}
-      <div className="relative w-full max-w-lg max-h-[80vh] bg-zinc-900 rounded-t-2xl sm:rounded-2xl overflow-hidden animate-slide-up">
+      {/* Drawer - slides in from right */}
+      <div className="relative ml-auto w-full max-w-md h-full bg-zinc-900 shadow-2xl animate-slide-in-right flex flex-col">
         {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-zinc-900 border-b border-white/[0.06]">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
           <div className="flex items-center gap-2">
             <Newspaper className="w-5 h-5 text-amber-400" />
             <h3 className="font-semibold">{t('news.title')}</h3>
@@ -109,12 +108,12 @@ export function NewsPanel({ topic, language, onClose, t }: NewsPanelProps) {
         </div>
 
         {/* Topic */}
-        <div className="px-4 py-2 bg-zinc-800/50">
-          <p className="font-medium truncate">{topic}</p>
+        <div className="px-4 py-2 bg-zinc-800/50 border-b border-white/[0.06]">
+          <p className="font-medium text-sm">{topic}</p>
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto max-h-[60vh] p-4">
+        <div className="flex-1 overflow-y-auto p-4">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="w-8 h-8 animate-spin text-zinc-500 mb-3" />
@@ -163,4 +162,3 @@ export function NewsPanel({ topic, language, onClose, t }: NewsPanelProps) {
     </div>
   );
 }
-
