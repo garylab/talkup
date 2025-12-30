@@ -8,8 +8,8 @@ import { api, NewsItem } from '@/lib/api';
 const pendingRequests = new Map<string, Promise<{ news: NewsItem[]; error?: string }>>();
 const completedCache = new Map<string, { data: { news: NewsItem[]; error?: string }; timestamp: number }>();
 
-function fetchNewsWithDedup(topic: string, language: string): Promise<{ news: NewsItem[]; error?: string }> {
-  const key = `${topic}:${language}`;
+function fetchNewsWithDedup(englishTopic: string, language: string): Promise<{ news: NewsItem[]; error?: string }> {
+  const key = `${englishTopic}:${language}`;
   
   // Check completed cache first (valid for 60 seconds)
   const cached = completedCache.get(key);
@@ -24,7 +24,8 @@ function fetchNewsWithDedup(topic: string, language: string): Promise<{ news: Ne
   }
   
   // Create and store promise BEFORE any async work
-  const promise = api.getNews(topic, language).then(data => {
+  // Always use English topic for API call
+  const promise = api.getNews(englishTopic, language).then(data => {
     // Cache the result
     completedCache.set(key, { data, timestamp: Date.now() });
     pendingRequests.delete(key);
@@ -39,13 +40,14 @@ function fetchNewsWithDedup(topic: string, language: string): Promise<{ news: Ne
 }
 
 interface NewsPanelProps {
-  topic: string;
+  topic: string;           // Displayed topic (localized)
+  englishTopic: string;    // English topic for search
   language: string;
   onClose: () => void;
   t: (key: string) => string;
 }
 
-export function NewsPanel({ topic, language, onClose, t }: NewsPanelProps) {
+export function NewsPanel({ topic, englishTopic, language, onClose, t }: NewsPanelProps) {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +60,8 @@ export function NewsPanel({ topic, language, onClose, t }: NewsPanelProps) {
       setError(null);
       
       try {
-        const response = await fetchNewsWithDedup(topic, language);
+        // Use English topic for search
+        const response = await fetchNewsWithDedup(englishTopic, language);
         if (cancelled) return;
         
         if (response.error) {
@@ -81,7 +84,7 @@ export function NewsPanel({ topic, language, onClose, t }: NewsPanelProps) {
     return () => {
       cancelled = true;
     };
-  }, [topic, language]);
+  }, [englishTopic, language]);
 
   return (
     <div className="fixed inset-0 z-50 flex">

@@ -66,6 +66,10 @@ export function getTopics(locale: Locale): string[] {
   return topicsMap[locale];
 }
 
+export function getEnglishTopics(): string[] {
+  return topicsEn.topics;
+}
+
 export function t(locale: Locale, key: string): string {
   const keys = key.split('.');
   let value: unknown = translations[locale];

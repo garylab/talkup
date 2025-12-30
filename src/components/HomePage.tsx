@@ -10,7 +10,7 @@ import { useRecorder } from '@/hooks/useRecorder';
 import { useLocalRecordings } from '@/hooks/useLocalStorage';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { useServiceWorker } from '@/hooks/useServiceWorker';
-import { t as translate, getTopics, Locale } from '@/i18n';
+import { t as translate, getTopics, getEnglishTopics, Locale } from '@/i18n';
 import type { RecordingType } from '@/types';
 
 interface HomePageProps {
@@ -21,12 +21,20 @@ export function HomePage({ locale }: HomePageProps) {
   // i18n helper
   const t = (key: string) => translate(locale, key);
   const topics = getTopics(locale);
+  const englishTopics = getEnglishTopics();
 
   // Tab navigation
   const [activeTab, setActiveTab] = useState<TabId>('home');
 
-  // Topic state
+  // Topic state - track both displayed topic and index for English lookup
   const [topic, setTopic] = useState<string | null>(null);
+  const [topicIndex, setTopicIndex] = useState<number | null>(null);
+  
+  // Handler to set both topic and index
+  const handleTopicChange = useCallback((newTopic: string | null, index: number | null = null) => {
+    setTopic(newTopic);
+    setTopicIndex(index);
+  }, []);
   
   // Local storage (metadata in localStorage, blobs in IndexedDB)
   const { recordings, isHydrated, addRecording, removeRecording, clearAllRecordings } = useLocalRecordings();
@@ -114,10 +122,12 @@ export function HomePage({ locale }: HomePageProps) {
             onStop={recorder.stopRecording}
             onReset={recorder.resetRecording}
             topic={topic}
-            onTopicChange={setTopic}
+            topicIndex={topicIndex}
+            onTopicChange={handleTopicChange}
             recordingType={recorder.recordingType || 'video'}
             t={t}
             topics={topics}
+            englishTopics={englishTopics}
             locale={locale}
           />
         )}

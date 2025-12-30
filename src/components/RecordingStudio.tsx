@@ -21,11 +21,13 @@ interface RecordingStudioProps {
   onStop: () => void;
   onReset: () => void;
   topic: string | null;
-  onTopicChange: (topic: string | null) => void;
+  topicIndex: number | null;
+  onTopicChange: (topic: string | null, index: number | null) => void;
   recordingType: RecordingType;
   // i18n
   t: (key: string) => string;
   topics: string[];
+  englishTopics: string[];
   locale: string;
 }
 
@@ -41,10 +43,12 @@ export function RecordingStudio({
   onStop,
   onReset,
   topic,
+  topicIndex,
   onTopicChange,
   recordingType,
   t,
   topics,
+  englishTopics,
   locale,
 }: RecordingStudioProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -155,10 +159,10 @@ export function RecordingStudio({
     setIsCreatingTopic(false);
     try {
       const data = await api.getRandomTopic(topics);
-      onTopicChange(data.title);
+      onTopicChange(data.title, data.index);
     } catch {
-      const randomTopic = topics[Math.floor(Math.random() * topics.length)];
-      onTopicChange(randomTopic);
+      const randomIndex = Math.floor(Math.random() * topics.length);
+      onTopicChange(topics[randomIndex], randomIndex);
     } finally {
       setIsLoadingTopic(false);
     }
@@ -185,7 +189,8 @@ export function RecordingStudio({
 
   const handleCreateTopic = () => {
     if (customTopic.trim()) {
-      onTopicChange(customTopic.trim());
+      // Custom topics have no index - backend will translate if needed
+      onTopicChange(customTopic.trim(), null);
       setCustomTopic('');
       setIsCreatingTopic(false);
     }
@@ -523,6 +528,7 @@ export function RecordingStudio({
       {showNewsPanel && topic && (
         <NewsPanel
           topic={topic}
+          englishTopic={topicIndex !== null ? englishTopics[topicIndex] : topic}
           language={locale}
           onClose={() => setShowNewsPanel(false)}
           t={t}
