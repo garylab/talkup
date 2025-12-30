@@ -148,136 +148,149 @@ async function scrapeAllNewsPages(
   return contentMap;
 }
 
-// Summarize news in English using full scraped content
+// Summarize a single news article
+async function summarizeSingleNews(
+  item: SerperNewsResult,
+  content: string,
+  apiKey: string
+): Promise<string> {
+  const contentToUse = content && content.length > 100 ? content : item.snippet;
+  
+  const prompt = `You are a news summarizer. Create a concise summary in English (around 150 words). Focus on the key facts and main points.
+
+Title: ${item.title}
+Source: ${item.source}
+Content:
+${contentToUse}
+
+Output only the summary text, nothing else.`;
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.3,
+        max_tokens: 500,
+      }),
+    });
+
+    if (!response.ok) {
+      console.log(`OpenAI error for ${item.title}: ${response.status}`);
+      return item.snippet;
+    }
+
+    const data = await response.json() as { 
+      choices: Array<{ message: { content: string } }> 
+    };
+    
+    return data.choices[0]?.message?.content?.trim() || item.snippet;
+  } catch (error) {
+    console.log(`Summarize error for ${item.title}:`, error);
+    return item.snippet;
+  }
+}
+
+// Summarize news in English using full scraped content - PARALLEL
 async function summarizeNewsEnglish(
   newsItems: SerperNewsResult[],
   contentMap: Map<string, string>,
   apiKey: string
 ): Promise<NewsItem[]> {
-  // Build news items with full content (or fallback to snippet)
-  const newsWithContent = newsItems.map((item, i) => {
-    const fullContent = contentMap.get(item.link);
-    const contentToUse = fullContent && fullContent.length > 100 ? fullContent : item.snippet;
-    return `${i + 1}. Title: ${item.title}\nSource: ${item.source}\nContent:\n${contentToUse}`;
+  // Summarize all articles in parallel
+  const summaryPromises = newsItems.map(async (item) => {
+    const fullContent = contentMap.get(item.link) || '';
+    const summary = await summarizeSingleNews(item, fullContent, apiKey);
+    return {
+      title: item.title,
+      source: item.source,
+      date: item.date,
+      url: item.link,
+      summary,
+    };
   });
 
-  const prompt = `You are a news summarizer. For each news article below, create a concise summary in English (around 150 words). Focus on the key facts and main points.
-
-News articles:
-${newsWithContent.join('\n\n---\n\n')}
-
-Respond with a JSON array in this exact format:
-[
-  {"index": 0, "summary": "150-word English summary here"},
-  {"index": 1, "summary": "150-word English summary here"},
-  ...
-]
-
-Only output the JSON array, nothing else.`;
-
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.3,
-      max_tokens: 4000, // Increased for longer summaries
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`OpenAI API error: ${response.status}`);
-  }
-
-  const data = await response.json() as { 
-    choices: Array<{ message: { content: string } }> 
-  };
-  
-  const content = data.choices[0]?.message?.content || '[]';
-  
-  let summaries: Array<{ index: number; summary: string }>;
-  try {
-    const jsonMatch = content.match(/\[[\s\S]*\]/);
-    summaries = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
-  } catch {
-    summaries = [];
-  }
-
-  return newsItems.map((item, index) => ({
-    title: item.title,
-    source: item.source,
-    date: item.date,
-    url: item.link,
-    summary: summaries.find(s => s.index === index)?.summary || item.snippet,
-  }));
+  return Promise.all(summaryPromises);
 }
 
-// Translate news to target language
+// Translate a single news item
+async function translateSingleNews(
+  item: NewsItem,
+  targetLanguage: string,
+  apiKey: string
+): Promise<NewsItem> {
+  const targetLang = LANGUAGE_NAMES[targetLanguage] || 'English';
+  
+  const prompt = `Translate the following news title and summary to ${targetLang}. Maintain the same level of detail.
+
+Title: ${item.title}
+Summary: ${item.summary}
+
+Respond with JSON in this exact format:
+{"title": "translated title", "summary": "translated summary"}
+
+Output only the JSON, nothing else.`;
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.3,
+        max_tokens: 800,
+      }),
+    });
+
+    if (!response.ok) {
+      console.log(`Translation error for ${item.title}: ${response.status}`);
+      return item;
+    }
+
+    const data = await response.json() as { 
+      choices: Array<{ message: { content: string } }> 
+    };
+    
+    const content = data.choices[0]?.message?.content || '{}';
+    
+    try {
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      const translation = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+      return {
+        ...item,
+        title: translation.title || item.title,
+        summary: translation.summary || item.summary,
+      };
+    } catch {
+      return item;
+    }
+  } catch (error) {
+    console.log(`Translation error for ${item.title}:`, error);
+    return item;
+  }
+}
+
+// Translate news to target language - PARALLEL
 async function translateNews(
   newsItems: NewsItem[],
   targetLanguage: string,
   apiKey: string
 ): Promise<NewsItem[]> {
-  const targetLang = LANGUAGE_NAMES[targetLanguage] || 'English';
-  
-  const prompt = `Translate the following news titles and summaries to ${targetLang}. Maintain the same level of detail in the summaries.
+  // Translate all items in parallel
+  const translatePromises = newsItems.map((item) => 
+    translateSingleNews(item, targetLanguage, apiKey)
+  );
 
-News items:
-${newsItems.map((item, i) => `${i + 1}. Title: ${item.title}\nSummary: ${item.summary}`).join('\n\n---\n\n')}
-
-Respond with a JSON array in this exact format:
-[
-  {"index": 0, "title": "translated title", "summary": "translated summary"},
-  {"index": 1, "title": "translated title", "summary": "translated summary"},
-  ...
-]
-
-Only output the JSON array, nothing else.`;
-
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.3,
-      max_tokens: 4000, // Increased for longer summaries
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`OpenAI API error: ${response.status}`);
-  }
-
-  const data = await response.json() as { 
-    choices: Array<{ message: { content: string } }> 
-  };
-  
-  const content = data.choices[0]?.message?.content || '[]';
-  
-  let translations: Array<{ index: number; title: string; summary: string }>;
-  try {
-    const jsonMatch = content.match(/\[[\s\S]*\]/);
-    translations = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
-  } catch {
-    translations = [];
-  }
-
-  return newsItems.map((item, index) => {
-    const translation = translations.find(t => t.index === index);
-    return {
-      ...item,
-      title: translation?.title || item.title,
-      summary: translation?.summary || item.summary,
-    };
-  });
+  return Promise.all(translatePromises);
 }
 
 // Handle news API request
