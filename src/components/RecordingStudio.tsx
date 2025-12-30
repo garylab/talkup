@@ -448,21 +448,19 @@ export function RecordingStudio({
                 onClick={handleStart}
                 disabled={!topic}
                 className={cn(
-                  'w-[72px] h-[72px] rounded-full',
+                  'w-[68px] h-[68px] rounded-full',
                   'flex items-center justify-center',
-                  'ring-4 ring-white/80',
-                  'bg-white/10 backdrop-blur',
+                  'bg-red-500',
+                  'ring-[3px] ring-white/90',
                   'active:scale-95 transition-all',
                   'disabled:opacity-40 disabled:cursor-not-allowed'
                 )}
               >
-                <div className="w-[56px] h-[56px] rounded-full bg-red-500 flex items-center justify-center">
-                  {recordMode === 'video' ? (
-                    <Video className="w-6 h-6 text-white" />
-                  ) : (
-                    <Mic className="w-6 h-6 text-white" />
-                  )}
-                </div>
+                {recordMode === 'video' ? (
+                  <Video className="w-6 h-6 text-white" />
+                ) : (
+                  <Mic className="w-6 h-6 text-white" />
+                )}
               </button>
             </div>
           )}
