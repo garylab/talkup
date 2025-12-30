@@ -113,7 +113,7 @@ export function NewsPanel({ topic, language, onClose, t }: NewsPanelProps) {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4 pb-24">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="w-8 h-8 animate-spin text-zinc-500 mb-3" />
