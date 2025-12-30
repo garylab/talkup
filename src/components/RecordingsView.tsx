@@ -168,12 +168,12 @@ export function RecordingsView({ recordings, onRemove, onClearAll, t }: Recordin
 
   return (
     <div className="pb-4">
-      {/* Header with stats */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">{t('recordings.title')}</h2>
-        <div className="flex items-center gap-3">
+      {/* Header */}
+      <div className="mb-4">
+        <h2 className="text-lg font-semibold mb-4">{t('recordings.title')}</h2>
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm text-zinc-500">
-            <span>{recordings.length}</span>
+            <span>{recordings.length} {t('recordings.items')}</span>
             <span>·</span>
             <span className="font-mono">{formatDuration(totalDuration)}</span>
             <span>·</span>
@@ -185,10 +185,10 @@ export function RecordingsView({ recordings, onRemove, onClearAll, t }: Recordin
                 onClearAll();
               }
             }}
-            className="btn-ghost p-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10"
-            title={t('recordings.clearAll')}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>{t('recordings.clearAll')}</span>
           </button>
         </div>
       </div>
