@@ -256,16 +256,18 @@ export function RecordingStudio({
           {/* Playback after stopped */}
           {isStopped && recordedUrl && (
             recordingType === 'video' ? (
-              <video
-                key={recordedUrl}
-                ref={playbackRef as React.RefObject<HTMLVideoElement>}
-                src={recordedUrl}
-                controls
-                playsInline
-                autoPlay
-                muted={false}
-                className="absolute inset-0 w-full h-full object-contain bg-black z-20"
-              />
+              <div className="absolute inset-0 flex items-center justify-center bg-black z-20 pb-[140px]">
+                <video
+                  key={recordedUrl}
+                  ref={playbackRef as React.RefObject<HTMLVideoElement>}
+                  src={recordedUrl}
+                  controls
+                  autoPlay
+                  playsInline
+                  loop
+                  className="w-full h-full object-contain"
+                />
+              </div>
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 w-full px-8 z-20 bg-black">
                 <div className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center">
@@ -277,6 +279,7 @@ export function RecordingStudio({
                   src={recordedUrl}
                   controls
                   autoPlay
+                  loop
                   className="w-full max-w-sm"
                 />
               </div>

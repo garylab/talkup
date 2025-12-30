@@ -1,5 +1,5 @@
 // Update this version number to force cache refresh
-const CACHE_VERSION = 'v11';
+const CACHE_VERSION = 'v12';
 const CACHE_NAME = `talkup-${CACHE_VERSION}`;
 
 // Files to pre-cache (keep minimal for faster updates)
