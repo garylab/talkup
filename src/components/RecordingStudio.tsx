@@ -326,7 +326,7 @@ export function RecordingStudio({
                       >
                         <span 
                           className="text-3xl md:text-5xl font-bold max-w-[320px] md:max-w-lg truncate"
-                          style={{ textShadow: '-2px -2px 0 rgba(0,0,0,0.8), 2px -2px 0 rgba(0,0,0,0.8), -2px 2px 0 rgba(0,0,0,0.8), 2px 2px 0 rgba(0,0,0,0.8)' }}
+                          style={{ textShadow: '0 2px 8px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.3)' }}
                         >
                           {topic}
                         </span>
