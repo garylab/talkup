@@ -3,11 +3,16 @@
     "title": "TalkUp",
     "description": "Obtén un tema aleatorio o crea el tuyo, luego grábate para mejorar."
   },
+  "nav": {
+    "home": "Inicio",
+    "recordings": "Grabaciones",
+    "settings": "Ajustes"
+  },
   "topic": {
-    "question": "Elige un tema y practica hablando",
+    "question": "Elige un tema y practica hablar",
     "or": "o",
     "create": "Crear",
-    "enterTopic": "Ingresa tu tema",
+    "enterTopic": "Ingresa un tema personalizado",
     "placeholder": "ej. Mi Recuerdo Favorito",
     "use": "Usar",
     "refresh": "Actualizar"
@@ -17,7 +22,7 @@
     "startAudio": "Iniciar Audio",
     "start": "Iniciar",
     "pause": "Pausar",
-    "resume": "Continuar",
+    "resume": "Reanudar",
     "stop": "Detener",
     "back": "Volver",
     "rec": "GRAB",
@@ -28,6 +33,13 @@
   "settings": {
     "title": "Ajustes",
     "mode": "Modo de Grabación",
+    "recordingMode": "Modo de Grabación",
+    "audioDesc": "Solo grabación de audio",
+    "videoDesc": "Grabación de video con audio",
+    "language": "Idioma",
+    "app": "Aplicación",
+    "installDesc": "Agregar a pantalla de inicio",
+    "about": "Acerca de",
     "microphone": "Micrófono",
     "camera": "Cámara",
     "selectMicrophone": "Seleccionar micrófono",
@@ -37,12 +49,16 @@
   },
   "recordings": {
     "title": "Grabaciones",
+    "empty": "Sin grabaciones aún",
     "search": "Buscar grabaciones...",
     "noResults": "No se encontraron grabaciones",
     "notFound": "Grabación no encontrada",
     "deleteConfirm": "¿Eliminar esta grabación?",
     "clearAll": "Borrar todo",
-    "clearAllConfirm": "¿Eliminar todas las grabaciones? Esto no se puede deshacer."
+    "clearAllConfirm": "¿Eliminar todas las grabaciones? Esto no se puede deshacer.",
+    "totalDuration": "Total",
+    "totalSize": "Tamaño",
+    "items": "elementos"
   },
   "common": {
     "delete": "Eliminar",
@@ -54,4 +70,3 @@
     "update": "Actualizar"
   }
 }
-

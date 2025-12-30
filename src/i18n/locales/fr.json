@@ -3,11 +3,16 @@
     "title": "TalkUp",
     "description": "Obtenez un sujet aléatoire ou créez le vôtre, puis enregistrez-vous pour vous améliorer."
   },
+  "nav": {
+    "home": "Accueil",
+    "recordings": "Enregistrements",
+    "settings": "Paramètres"
+  },
   "topic": {
     "question": "Choisissez un sujet et pratiquez",
     "or": "ou",
     "create": "Créer",
-    "enterTopic": "Entrez votre sujet",
+    "enterTopic": "Entrez un sujet personnalisé",
     "placeholder": "ex. Mon Souvenir Préféré",
     "use": "Utiliser",
     "refresh": "Actualiser"
@@ -20,38 +25,48 @@
     "resume": "Reprendre",
     "stop": "Arrêter",
     "back": "Retour",
-    "rec": "ENREG",
+    "rec": "ENR",
     "paused": "EN PAUSE",
     "video": "Vidéo",
     "audio": "Audio"
   },
   "settings": {
     "title": "Paramètres",
-    "mode": "Mode d'enregistrement",
+    "mode": "Mode d'Enregistrement",
+    "recordingMode": "Mode d'Enregistrement",
+    "audioDesc": "Enregistrement audio uniquement",
+    "videoDesc": "Enregistrement vidéo avec audio",
+    "language": "Langue",
+    "app": "Application",
+    "installDesc": "Ajouter à l'écran d'accueil",
+    "about": "À propos",
     "microphone": "Microphone",
     "camera": "Caméra",
     "selectMicrophone": "Sélectionner le microphone",
     "selectCamera": "Sélectionner la caméra",
     "noDevices": "Aucun appareil trouvé",
-    "save": "Sauvegarder"
+    "save": "Enregistrer"
   },
   "recordings": {
     "title": "Enregistrements",
-    "search": "Rechercher...",
+    "empty": "Aucun enregistrement",
+    "search": "Rechercher des enregistrements...",
     "noResults": "Aucun enregistrement trouvé",
     "notFound": "Enregistrement introuvable",
-    "deleteConfirm": "Supprimer cet enregistrement ?",
+    "deleteConfirm": "Supprimer cet enregistrement?",
     "clearAll": "Tout effacer",
-    "clearAllConfirm": "Supprimer tous les enregistrements ? Cette action est irréversible."
+    "clearAllConfirm": "Supprimer tous les enregistrements? Cette action est irréversible.",
+    "totalDuration": "Total",
+    "totalSize": "Taille",
+    "items": "éléments"
   },
   "common": {
     "delete": "Supprimer",
     "share": "Partager"
   },
   "pwa": {
-    "install": "Installer l'app",
-    "updateAvailable": "Nouvelle version disponible !",
+    "install": "Installer l'App",
+    "updateAvailable": "Nouvelle version disponible!",
     "update": "Mettre à jour"
   }
 }
-

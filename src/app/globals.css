@@ -3,40 +3,39 @@
 @tailwind utilities;
 
 :root {
-  --font-sans: var(--font-crimson), Georgia, 'Times New Roman', serif;
-  --font-mono: var(--font-mono), 'Courier New', monospace;
+  --font-sans: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+  --bg-primary: #0a0a0b;
+  --bg-secondary: #111113;
+  --bg-surface: #18181b;
+  --bg-elevated: #1f1f23;
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-medium: rgba(255, 255, 255, 0.1);
 }
 
 @layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+
   body {
     font-family: var(--font-sans);
-    background: linear-gradient(
-      135deg,
-      #0f172a 0%,
-      #1e1b4b 25%,
-      #0f172a 50%,
-      #1e1b4b 75%,
-      #0f172a 100%
-    );
-    background-size: 400% 400%;
-    animation: gradientShift 20s ease infinite;
-    background-attachment: fixed;
+    background: var(--bg-primary);
+    color: #fafafa;
+    min-height: 100dvh;
+    overflow-x: hidden;
   }
 
-  @keyframes gradientShift {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-  }
-
-  /* Hide scrollbar but keep functionality */
+  /* Native-like scrollbar */
   * {
     scrollbar-width: thin;
-    scrollbar-color: rgba(148, 163, 184, 0.2) transparent;
+    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
   }
 
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 4px;
+    height: 4px;
   }
 
   ::-webkit-scrollbar-track {
@@ -44,109 +43,193 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: rgba(148, 163, 184, 0.2);
-    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 2px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(148, 163, 184, 0.3);
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  /* Disable text selection on UI elements */
+  button, [role="button"] {
+    -webkit-user-select: none;
+    user-select: none;
   }
 }
 
 @layer components {
-  /* Clean card without heavy borders */
-  .card {
-    @apply bg-slate-900/60 backdrop-blur-xl rounded-2xl;
+  /* App container */
+  .app-container {
+    @apply w-full max-w-3xl mx-auto px-4;
   }
 
-  /* Subtle elevated card */
-  .card-elevated {
-    @apply bg-slate-900/80 backdrop-blur-xl rounded-2xl shadow-xl shadow-black/20;
+  /* Section with subtle top border */
+  .section {
+    @apply py-4;
   }
 
-  /* Interactive surface (buttons, list items) */
+  .section-header {
+    @apply flex items-center justify-between mb-3;
+  }
+
+  .section-title {
+    @apply text-[13px] font-semibold uppercase tracking-wider text-zinc-500;
+  }
+
+  /* List styles */
+  .list {
+    @apply divide-y divide-white/[0.06];
+  }
+
+  .list-item {
+    @apply flex items-center gap-3 py-3 -mx-4 px-4 active:bg-white/[0.04] transition-colors;
+  }
+
+  .list-item-interactive {
+    @apply flex items-center gap-3 py-3 -mx-4 px-4 active:bg-white/[0.04] transition-colors cursor-pointer;
+  }
+
+  /* Surface card - minimal */
   .surface {
-    @apply bg-white/[0.03] rounded-xl;
+    @apply bg-zinc-900/50 rounded-2xl overflow-hidden;
   }
 
-  .surface-hover {
-    @apply bg-white/[0.03] hover:bg-white/[0.06] rounded-xl transition-colors;
+  .surface-padded {
+    @apply bg-zinc-900/50 rounded-2xl overflow-hidden p-4;
   }
 
-  /* Legacy glass-card for compatibility */
-  .glass-card {
-    @apply bg-slate-900/60 backdrop-blur-xl rounded-2xl;
+  /* Legacy card support */
+  .card {
+    @apply bg-zinc-900/50 rounded-2xl overflow-hidden;
   }
 
+  /* Primary button - solid, vibrant */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 px-6 py-3 
-           bg-gradient-to-r from-rose-500 to-pink-600 
-           hover:from-rose-600 hover:to-pink-700
-           text-white font-medium rounded-xl 
-           transition-all duration-200
-           hover:shadow-lg hover:shadow-rose-500/20
-           active:scale-[0.98];
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5
+           bg-rose-500 hover:bg-rose-600
+           text-white font-semibold rounded-xl
+           transition-all duration-150
+           active:scale-[0.97] active:opacity-90;
   }
 
+  /* Secondary button */
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 px-6 py-3 
-           bg-white/[0.06] hover:bg-white/[0.1]
-           text-white font-medium rounded-xl 
-           transition-all duration-200
-           active:scale-[0.98];
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5
+           bg-zinc-800 hover:bg-zinc-700
+           text-white font-medium rounded-xl
+           transition-all duration-150
+           active:scale-[0.97];
   }
 
+  /* Ghost button */
   .btn-ghost {
     @apply inline-flex items-center justify-center
-           text-slate-400 hover:text-white hover:bg-white/[0.06]
-           rounded-lg transition-colors duration-200;
+           text-zinc-400 hover:text-white hover:bg-white/[0.08]
+           rounded-lg transition-all duration-150
+           active:scale-[0.97];
   }
 
+  /* Icon button */
+  .btn-icon {
+    @apply p-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-white/[0.08]
+           transition-all duration-150 active:scale-[0.95];
+  }
+
+  /* Pill buttons (segmented control) */
+  .segmented-control {
+    @apply flex items-center bg-zinc-800/80 rounded-xl p-1;
+  }
+
+  .segmented-button {
+    @apply px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-150;
+  }
+
+  .segmented-button-active {
+    @apply bg-white text-black;
+  }
+
+  .segmented-button-inactive {
+    @apply text-zinc-400 hover:text-white;
+  }
+
+  /* Text gradient */
   .text-gradient {
-    @apply bg-gradient-to-r from-rose-400 via-pink-400 to-violet-400 
+    @apply bg-gradient-to-r from-rose-400 via-pink-400 to-violet-400
            bg-clip-text text-transparent;
   }
 
   /* Dropdown menu */
   .dropdown-menu {
-    @apply bg-slate-900 rounded-xl shadow-xl shadow-black/40 overflow-hidden;
+    @apply bg-zinc-900 border border-white/10 rounded-xl shadow-xl shadow-black/50 overflow-hidden;
   }
 
   .dropdown-item {
-    @apply w-full flex items-center gap-2 px-3 py-2.5 text-sm
-           text-slate-300 hover:text-white hover:bg-white/[0.06]
+    @apply w-full flex items-center gap-2 px-3.5 py-2.5 text-sm
+           text-zinc-300 hover:text-white hover:bg-white/[0.06]
            transition-colors cursor-pointer;
   }
 
   .dropdown-item-active {
     @apply bg-white/[0.08] text-white;
   }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-white/10 text-zinc-300;
+  }
+
+  .badge-success {
+    @apply bg-emerald-500/15 text-emerald-400;
+  }
+
+  .badge-warning {
+    @apply bg-amber-500/15 text-amber-400;
+  }
+
+  .badge-danger {
+    @apply bg-red-500/15 text-red-400;
+  }
 }
 
 @layer utilities {
-  .animate-delay-100 { animation-delay: 100ms; }
-  .animate-delay-200 { animation-delay: 200ms; }
-  .animate-delay-300 { animation-delay: 300ms; }
-  .animate-delay-400 { animation-delay: 400ms; }
-  .animate-delay-500 { animation-delay: 500ms; }
-  
-  .mirror {
-    transform: scaleX(-1);
-  }
-
+  /* Animation utilities */
   .animate-fade-in {
     animation: fadeIn 0.15s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.2s ease-out;
   }
 
   .animate-scale-in {
     animation: scaleIn 0.15s ease-out;
   }
+
+  /* Safe area padding for notched devices */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-x {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
 }
 
 @keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(-4px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -165,9 +248,9 @@
   }
 }
 
-/* Audio player styling */
+/* Native-style audio player */
 audio::-webkit-media-controls-panel {
-  background: rgba(15, 23, 42, 0.95);
+  background: var(--bg-elevated);
 }
 
 audio::-webkit-media-controls-play-button,
@@ -177,10 +260,10 @@ audio::-webkit-media-controls-mute-button {
 
 audio::-webkit-media-controls-current-time-display,
 audio::-webkit-media-controls-time-remaining-display {
-  color: white;
+  color: #fafafa;
 }
 
-/* Video styling */
+/* Native-style video controls */
 video::-webkit-media-controls-panel {
-  background: rgba(15, 23, 42, 0.95);
+  background: var(--bg-elevated);
 }

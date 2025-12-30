@@ -1,20 +1,25 @@
 {
   "app": {
     "title": "TalkUp",
-    "description": "获取随机话题或创建自己的话题，然后录制自己来提升。"
+    "description": "获取随机话题或创建自己的话题，然后录制自己来提高。"
+  },
+  "nav": {
+    "home": "首页",
+    "recordings": "录音",
+    "settings": "设置"
   },
   "topic": {
     "question": "选个话题，开始练习演讲",
     "or": "或",
     "create": "创建",
-    "enterTopic": "输入你的话题",
+    "enterTopic": "输入自定义话题",
     "placeholder": "例如：我最喜欢的回忆",
     "use": "使用",
-    "refresh": "换一个"
+    "refresh": "刷新"
   },
   "recording": {
-    "startVideo": "录制视频",
-    "startAudio": "录制音频",
+    "startVideo": "开始视频",
+    "startAudio": "开始音频",
     "start": "开始",
     "pause": "暂停",
     "resume": "继续",
@@ -28,6 +33,13 @@
   "settings": {
     "title": "设置",
     "mode": "录制模式",
+    "recordingMode": "录制模式",
+    "audioDesc": "仅录制音频",
+    "videoDesc": "录制视频和音频",
+    "language": "语言",
+    "app": "应用",
+    "installDesc": "添加到主屏幕",
+    "about": "关于",
     "microphone": "麦克风",
     "camera": "摄像头",
     "selectMicrophone": "选择麦克风",
@@ -36,13 +48,17 @@
     "save": "保存"
   },
   "recordings": {
-    "title": "录制历史",
-    "search": "搜索录制...",
-    "noResults": "未找到录制",
-    "notFound": "无法加载录制",
-    "deleteConfirm": "确定删除这个录制吗？",
-    "clearAll": "清空全部",
-    "clearAllConfirm": "删除所有录制？此操作无法撤销。"
+    "title": "录音列表",
+    "empty": "暂无录音",
+    "search": "搜索录音...",
+    "noResults": "未找到录音",
+    "notFound": "录音不存在",
+    "deleteConfirm": "删除此录音？",
+    "clearAll": "清除全部",
+    "clearAllConfirm": "删除所有录音？此操作无法撤销。",
+    "totalDuration": "总时长",
+    "totalSize": "总大小",
+    "items": "条"
   },
   "common": {
     "delete": "删除",
@@ -50,8 +66,7 @@
   },
   "pwa": {
     "install": "安装应用",
-    "updateAvailable": "新版本可用！",
+    "updateAvailable": "发现新版本！",
     "update": "更新"
   }
 }
-

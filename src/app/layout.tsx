@@ -1,18 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Crimson_Pro, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
-
-const crimsonPro = Crimson_Pro({
-  subsets: ['latin'],
-  variable: '--font-crimson',
-  display: 'swap',
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  variable: '--font-mono',
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   title: 'TalkUp',
@@ -30,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#020617',
+  themeColor: '#0a0a0b',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -44,14 +31,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${crimsonPro.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en">
       <head>
         <link rel="apple-touch-icon" href="/icons/icon.svg" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
-      <body className="min-h-screen bg-slate-950 text-slate-100 antialiased">
+      <body className="min-h-[100dvh] antialiased">
         {children}
         <script
           dangerouslySetInnerHTML={{

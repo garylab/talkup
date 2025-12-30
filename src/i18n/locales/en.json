@@ -3,11 +3,16 @@
     "title": "TalkUp",
     "description": "Get a random topic or create your own, then record yourself to improve."
   },
+  "nav": {
+    "home": "Home",
+    "recordings": "Recordings",
+    "settings": "Settings"
+  },
   "topic": {
     "question": "Pick a topic and practice speaking",
     "or": "or",
     "create": "Create",
-    "enterTopic": "Enter your topic",
+    "enterTopic": "Enter a custom topic",
     "placeholder": "e.g. My Favorite Memory",
     "use": "Use",
     "refresh": "Refresh"
@@ -28,6 +33,13 @@
   "settings": {
     "title": "Settings",
     "mode": "Recording Mode",
+    "recordingMode": "Recording Mode",
+    "audioDesc": "Audio only recording",
+    "videoDesc": "Video with audio recording",
+    "language": "Language",
+    "app": "App",
+    "installDesc": "Add to your home screen",
+    "about": "About",
     "microphone": "Microphone",
     "camera": "Camera",
     "selectMicrophone": "Select microphone",
@@ -37,12 +49,16 @@
   },
   "recordings": {
     "title": "Recordings",
+    "empty": "No recordings yet",
     "search": "Search recordings...",
     "noResults": "No recordings found",
     "notFound": "Recording not found",
     "deleteConfirm": "Delete this recording?",
     "clearAll": "Clear all",
-    "clearAllConfirm": "Delete all recordings? This cannot be undone."
+    "clearAllConfirm": "Delete all recordings? This cannot be undone.",
+    "totalDuration": "Total",
+    "totalSize": "Size",
+    "items": "items"
   },
   "common": {
     "delete": "Delete",
@@ -54,4 +70,3 @@
     "update": "Update"
   }
 }
-

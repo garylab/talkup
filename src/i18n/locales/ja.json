@@ -3,31 +3,43 @@
     "title": "TalkUp",
     "description": "ランダムなトピックを取得するか、自分で作成して、録音して上達しましょう。"
   },
+  "nav": {
+    "home": "ホーム",
+    "recordings": "録音",
+    "settings": "設定"
+  },
   "topic": {
-    "question": "トピックを選んでスピーチ練習",
+    "question": "トピックを選んでスピーキング練習",
     "or": "または",
     "create": "作成",
-    "enterTopic": "トピックを入力",
+    "enterTopic": "カスタムトピックを入力",
     "placeholder": "例：私の好きな思い出",
     "use": "使用",
     "refresh": "更新"
   },
   "recording": {
-    "startVideo": "動画開始",
-    "startAudio": "音声開始",
+    "startVideo": "ビデオ開始",
+    "startAudio": "オーディオ開始",
     "start": "開始",
     "pause": "一時停止",
     "resume": "再開",
     "stop": "停止",
     "back": "戻る",
-    "rec": "録画中",
+    "rec": "録音中",
     "paused": "一時停止中",
-    "video": "動画",
-    "audio": "音声"
+    "video": "ビデオ",
+    "audio": "オーディオ"
   },
   "settings": {
     "title": "設定",
-    "mode": "録画モード",
+    "mode": "録音モード",
+    "recordingMode": "録音モード",
+    "audioDesc": "音声のみの録音",
+    "videoDesc": "音声付きビデオ録画",
+    "language": "言語",
+    "app": "アプリ",
+    "installDesc": "ホーム画面に追加",
+    "about": "このアプリについて",
     "microphone": "マイク",
     "camera": "カメラ",
     "selectMicrophone": "マイクを選択",
@@ -36,13 +48,17 @@
     "save": "保存"
   },
   "recordings": {
-    "title": "録画一覧",
-    "search": "録画を検索...",
-    "noResults": "録画が見つかりません",
-    "notFound": "録画が見つかりません",
-    "deleteConfirm": "この録画を削除しますか？",
+    "title": "録音一覧",
+    "empty": "録音がありません",
+    "search": "録音を検索...",
+    "noResults": "録音が見つかりません",
+    "notFound": "録音が見つかりません",
+    "deleteConfirm": "この録音を削除しますか？",
     "clearAll": "すべて削除",
-    "clearAllConfirm": "すべての録画を削除しますか？この操作は元に戻せません。"
+    "clearAllConfirm": "すべての録音を削除しますか？元に戻せません。",
+    "totalDuration": "合計",
+    "totalSize": "サイズ",
+    "items": "件"
   },
   "common": {
     "delete": "削除",
@@ -54,4 +70,3 @@
     "update": "更新"
   }
 }
-

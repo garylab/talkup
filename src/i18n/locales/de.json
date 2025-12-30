@@ -1,24 +1,29 @@
 {
   "app": {
     "title": "TalkUp",
-    "description": "Holen Sie sich ein zufälliges Thema oder erstellen Sie Ihr eigenes, dann nehmen Sie sich auf."
+    "description": "Erhalten Sie ein zufälliges Thema oder erstellen Sie Ihr eigenes, dann nehmen Sie sich auf."
+  },
+  "nav": {
+    "home": "Start",
+    "recordings": "Aufnahmen",
+    "settings": "Einstellungen"
   },
   "topic": {
-    "question": "Wähle ein Thema und übe sprechen",
+    "question": "Wähle ein Thema und übe das Sprechen",
     "or": "oder",
     "create": "Erstellen",
-    "enterTopic": "Geben Sie Ihr Thema ein",
+    "enterTopic": "Geben Sie ein eigenes Thema ein",
     "placeholder": "z.B. Meine Lieblingserinnerung",
     "use": "Verwenden",
     "refresh": "Aktualisieren"
   },
   "recording": {
-    "startVideo": "Video starten",
-    "startAudio": "Audio starten",
-    "start": "Start",
+    "startVideo": "Video Starten",
+    "startAudio": "Audio Starten",
+    "start": "Starten",
     "pause": "Pause",
     "resume": "Fortsetzen",
-    "stop": "Stopp",
+    "stop": "Stoppen",
     "back": "Zurück",
     "rec": "AUFN",
     "paused": "PAUSIERT",
@@ -28,6 +33,13 @@
   "settings": {
     "title": "Einstellungen",
     "mode": "Aufnahmemodus",
+    "recordingMode": "Aufnahmemodus",
+    "audioDesc": "Nur Audioaufnahme",
+    "videoDesc": "Videoaufnahme mit Audio",
+    "language": "Sprache",
+    "app": "App",
+    "installDesc": "Zum Startbildschirm hinzufügen",
+    "about": "Über",
     "microphone": "Mikrofon",
     "camera": "Kamera",
     "selectMicrophone": "Mikrofon auswählen",
@@ -37,21 +49,24 @@
   },
   "recordings": {
     "title": "Aufnahmen",
+    "empty": "Noch keine Aufnahmen",
     "search": "Aufnahmen suchen...",
     "noResults": "Keine Aufnahmen gefunden",
     "notFound": "Aufnahme nicht gefunden",
     "deleteConfirm": "Diese Aufnahme löschen?",
     "clearAll": "Alle löschen",
-    "clearAllConfirm": "Alle Aufnahmen löschen? Dies kann nicht rückgängig gemacht werden."
+    "clearAllConfirm": "Alle Aufnahmen löschen? Dies kann nicht rückgängig gemacht werden.",
+    "totalDuration": "Gesamt",
+    "totalSize": "Größe",
+    "items": "Einträge"
   },
   "common": {
     "delete": "Löschen",
     "share": "Teilen"
   },
   "pwa": {
-    "install": "App installieren",
+    "install": "App Installieren",
     "updateAvailable": "Neue Version verfügbar!",
     "update": "Aktualisieren"
   }
 }
-
