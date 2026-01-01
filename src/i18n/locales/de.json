@@ -39,13 +39,18 @@
     "language": "Sprache",
     "app": "App",
     "installDesc": "Zum Startbildschirm hinzufügen",
+    "iosInstall": "Tippen Sie auf Teilen, dann \"Zum Home-Bildschirm\"",
+    "browserInstall": "Verwenden Sie das Browser-Menü, um diese App zu installieren",
     "about": "Über",
     "microphone": "Mikrofon",
     "camera": "Kamera",
     "selectMicrophone": "Mikrofon auswählen",
     "selectCamera": "Kamera auswählen",
     "noDevices": "Keine Geräte gefunden",
-    "save": "Speichern"
+    "save": "Speichern",
+    "newsCount": "Nachrichten",
+    "newsCountLabel": "Anzahl der Nachrichten",
+    "newsCountDesc": "Wie viele Artikel anzeigen (1-10)"
   },
   "recordings": {
     "title": "Aufnahmen",

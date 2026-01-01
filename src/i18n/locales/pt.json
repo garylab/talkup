@@ -39,13 +39,18 @@
     "language": "Idioma",
     "app": "Aplicativo",
     "installDesc": "Adicionar à tela inicial",
+    "iosInstall": "Toque em Compartilhar, depois \"Adicionar à Tela de Início\"",
+    "browserInstall": "Use o menu do navegador para instalar este aplicativo",
     "about": "Sobre",
     "microphone": "Microfone",
     "camera": "Câmera",
     "selectMicrophone": "Selecionar microfone",
     "selectCamera": "Selecionar câmera",
     "noDevices": "Nenhum dispositivo encontrado",
-    "save": "Salvar"
+    "save": "Salvar",
+    "newsCount": "Notícias",
+    "newsCountLabel": "Número de notícias",
+    "newsCountDesc": "Quantas notícias mostrar (1-10)"
   },
   "recordings": {
     "title": "Gravações",

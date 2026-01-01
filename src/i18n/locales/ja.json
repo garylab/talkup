@@ -39,13 +39,18 @@
     "language": "言語",
     "app": "アプリ",
     "installDesc": "ホーム画面に追加",
+    "iosInstall": "共有ボタンをタップし、「ホーム画面に追加」を選択",
+    "browserInstall": "ブラウザのメニューからこのアプリをインストール",
     "about": "このアプリについて",
     "microphone": "マイク",
     "camera": "カメラ",
     "selectMicrophone": "マイクを選択",
     "selectCamera": "カメラを選択",
     "noDevices": "デバイスが見つかりません",
-    "save": "保存"
+    "save": "保存",
+    "newsCount": "ニュース",
+    "newsCountLabel": "ニュースの件数",
+    "newsCountDesc": "表示するニュース数 (1-10)"
   },
   "recordings": {
     "title": "録音一覧",

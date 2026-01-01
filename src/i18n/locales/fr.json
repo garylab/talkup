@@ -39,13 +39,18 @@
     "language": "Langue",
     "app": "Application",
     "installDesc": "Ajouter à l'écran d'accueil",
+    "iosInstall": "Appuyez sur Partager, puis \"Ajouter à l'écran d'accueil\"",
+    "browserInstall": "Utilisez le menu du navigateur pour installer cette application",
     "about": "À propos",
     "microphone": "Microphone",
     "camera": "Caméra",
     "selectMicrophone": "Sélectionner le microphone",
     "selectCamera": "Sélectionner la caméra",
     "noDevices": "Aucun appareil trouvé",
-    "save": "Enregistrer"
+    "save": "Enregistrer",
+    "newsCount": "Actualités",
+    "newsCountLabel": "Nombre d'actualités",
+    "newsCountDesc": "Combien d'articles afficher (1-10)"
   },
   "recordings": {
     "title": "Enregistrements",
