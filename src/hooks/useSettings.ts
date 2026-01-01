@@ -6,10 +6,12 @@ import type { RecordingType } from '@/types';
 
 export interface AppSettings {
   recordMode: RecordingType;
+  newsCount: number;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
   recordMode: 'audio',
+  newsCount: 5,
 };
 
 export function useSettings() {
@@ -19,8 +21,14 @@ export function useSettings() {
     setSettings((prev) => ({ ...prev, recordMode: mode }));
   }, [setSettings]);
 
+  const setNewsCount = useCallback((count: number) => {
+    const validCount = Math.min(10, Math.max(1, count));
+    setSettings((prev) => ({ ...prev, newsCount: validCount }));
+  }, [setSettings]);
+
   return {
     settings,
     setRecordMode,
+    setNewsCount,
   };
 }

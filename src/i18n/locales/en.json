@@ -39,13 +39,18 @@
     "language": "Language",
     "app": "App",
     "installDesc": "Add to your home screen",
+    "iosInstall": "Tap the Share button, then \"Add to Home Screen\"",
+    "browserInstall": "Use your browser menu to install this app",
     "about": "About",
     "microphone": "Microphone",
     "camera": "Camera",
     "selectMicrophone": "Select microphone",
     "selectCamera": "Select camera",
     "noDevices": "No devices found",
-    "save": "Save"
+    "save": "Save",
+    "newsCount": "News",
+    "newsCountLabel": "Number of news",
+    "newsCountDesc": "How many news articles to show (1-10)"
   },
   "recordings": {
     "title": "Recordings",

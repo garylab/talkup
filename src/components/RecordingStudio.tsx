@@ -524,6 +524,7 @@ export function RecordingStudio({
         <NewsPanel
           topic={topic}
           language={locale}
+          newsCount={settings.newsCount}
           onClose={() => setShowNewsPanel(false)}
           t={t}
         />

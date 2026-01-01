@@ -76,7 +76,6 @@ async function scrapeNewsPage(url: string, apiKey: string): Promise<string> {
       },
       body: JSON.stringify({
         url: url,
-        includeMarkdown: true,
       }),
     });
 
@@ -85,9 +84,9 @@ async function scrapeNewsPage(url: string, apiKey: string): Promise<string> {
       return '';
     }
 
-    const data = await response.json() as { markdown?: string; text?: string };
-    // Prefer markdown, fallback to text, limit to first 10000 chars to avoid token limits
-    const content = data.markdown || data.text || '';
+    const data = await response.json() as { text?: string };
+    // Limit to first 10000 chars to avoid token limits
+    const content = data.text || '';
     return content.slice(0, 10000);
   } catch (error) {
     console.log(`Scrape error for ${url}:`, error);
@@ -206,6 +205,7 @@ async function handleNewsRequest(request: Request, env: Env): Promise<Response> 
     const url = new URL(request.url);
     const topic = url.searchParams.get('topic');
     const language = url.searchParams.get('lang') || 'en';
+    const count = Math.min(10, Math.max(1, parseInt(url.searchParams.get('count') || '5')));
 
     if (!topic) {
       return new Response(
@@ -214,8 +214,8 @@ async function handleNewsRequest(request: Request, env: Env): Promise<Response> 
       );
     }
 
-    // Step 1: Check cache (topic + language)
-    const cacheKey = getCacheKey(topic, language);
+    // Step 1: Check cache (topic + language + count)
+    const cacheKey = `${getCacheKey(topic, language)}:${count}`;
     const cached = await env.TALKUP_CACHE.get(cacheKey);
     
     if (cached) {
@@ -227,14 +227,17 @@ async function handleNewsRequest(request: Request, env: Env): Promise<Response> 
 
     // Step 2: Search Google News in user's language with localized geo
     console.log(`Searching news for: "${topic}" in ${language}`);
-    const newsResults = await searchNews(topic, language, env.SERPER_API_KEY);
+    const allNewsResults = await searchNews(topic, language, env.SERPER_API_KEY);
     
-    if (newsResults.length === 0) {
+    if (allNewsResults.length === 0) {
       return new Response(
         JSON.stringify({ news: [], message: 'No news found' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Limit to requested count
+    const newsResults = allNewsResults.slice(0, count);
 
     // Step 3: Scrape all news pages in parallel
     console.log(`Scraping ${newsResults.length} news pages...`);

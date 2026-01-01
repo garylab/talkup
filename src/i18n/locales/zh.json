@@ -39,13 +39,18 @@
     "language": "语言",
     "app": "应用",
     "installDesc": "添加到主屏幕",
+    "iosInstall": "点击分享按钮，然后选择「添加到主屏幕」",
+    "browserInstall": "使用浏览器菜单安装此应用",
     "about": "关于",
     "microphone": "麦克风",
     "camera": "摄像头",
     "selectMicrophone": "选择麦克风",
     "selectCamera": "选择摄像头",
     "noDevices": "未找到设备",
-    "save": "保存"
+    "save": "保存",
+    "newsCount": "新闻",
+    "newsCountLabel": "新闻数量",
+    "newsCountDesc": "显示多少条新闻 (1-10)"
   },
   "recordings": {
     "title": "录音列表",

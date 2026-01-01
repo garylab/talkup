@@ -32,7 +32,7 @@ export function HomePage({ locale }: HomePageProps) {
   const { recordings, isHydrated, addRecording, removeRecording, clearAllRecordings } = useLocalRecordings();
 
   // PWA install
-  const { isInstallable, install } = usePWAInstall();
+  const { isInstallable, isInstalled, install } = usePWAInstall();
 
   // Service worker updates
   const { isUpdateAvailable, updateServiceWorker } = useServiceWorker();
@@ -143,6 +143,7 @@ export function HomePage({ locale }: HomePageProps) {
               <SettingsView
                 locale={locale}
                 isInstallable={isInstallable}
+                isInstalled={isInstalled}
                 onInstall={install}
                 t={t}
               />

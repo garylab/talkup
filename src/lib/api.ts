@@ -44,11 +44,11 @@ class LocalApi {
   }
 
   // Get news for a topic
-  async getNews(topic: string, language: string): Promise<NewsResponse> {
+  async getNews(topic: string, language: string, count: number = 5): Promise<NewsResponse> {
     try {
       const baseUrl = getApiBaseUrl();
       const response = await fetch(
-        `${baseUrl}/api/news?topic=${encodeURIComponent(topic)}&lang=${language}`,
+        `${baseUrl}/api/news?topic=${encodeURIComponent(topic)}&lang=${language}&count=${count}`,
         { 
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
