@@ -33,25 +33,22 @@ function getApiBaseUrl(): string {
 
 class LocalApi {
   // Get a random topic from provided topics array
-  // Returns title and index for looking up English version
-  async getRandomTopic(topics: string[]): Promise<Topic & { index: number }> {
+  async getRandomTopic(topics: string[]): Promise<Topic> {
     // Simulate slight delay
     await new Promise(resolve => setTimeout(resolve, 50));
     const randomIndex = Math.floor(Math.random() * topics.length);
     return {
       id: String(randomIndex),
       title: topics[randomIndex],
-      index: randomIndex,
     };
   }
 
   // Get news for a topic
-  // englishTopic is used for searching (avoids translation API call)
-  async getNews(englishTopic: string, language: string): Promise<NewsResponse> {
+  async getNews(topic: string, language: string): Promise<NewsResponse> {
     try {
       const baseUrl = getApiBaseUrl();
       const response = await fetch(
-        `${baseUrl}/api/news?topic=${encodeURIComponent(englishTopic)}&lang=${language}`,
+        `${baseUrl}/api/news?topic=${encodeURIComponent(topic)}&lang=${language}`,
         { 
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },

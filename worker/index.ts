@@ -21,59 +21,29 @@ interface NewsItem {
   url: string;
 }
 
-const LANGUAGE_NAMES: Record<string, string> = {
-  en: 'English',
-  zh: 'Chinese',
-  es: 'Spanish',
-  fr: 'French',
-  de: 'German',
-  ja: 'Japanese',
-  pt: 'Portuguese',
+// Language to Google Search params mapping
+const LANGUAGE_CONFIG: Record<string, { hl: string; gl: string; name: string }> = {
+  en: { hl: 'en', gl: 'us', name: 'English' },
+  zh: { hl: 'zh-CN', gl: 'cn', name: 'Chinese' },
+  es: { hl: 'es', gl: 'es', name: 'Spanish' },
+  fr: { hl: 'fr', gl: 'fr', name: 'French' },
+  de: { hl: 'de', gl: 'de', name: 'German' },
+  ja: { hl: 'ja', gl: 'jp', name: 'Japanese' },
+  pt: { hl: 'pt-BR', gl: 'br', name: 'Portuguese' },
 };
 
-// Generate cache key using English topic
-function getCacheKey(englishTopic: string, language: string): string {
+// Generate cache key - use topic and language directly
+function getCacheKey(topic: string, language: string): string {
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-  return `${today}:${englishTopic.toLowerCase()}:${language}`;
+  return `${today}:${topic.toLowerCase()}:${language}`;
 }
 
-// Translate topic to English using OpenAI
-async function translateTopicToEnglish(topic: string, apiKey: string): Promise<string> {
-  // If topic looks like English already, return as-is
-  if (/^[a-zA-Z0-9\s\-']+$/.test(topic)) {
-    return topic;
-  }
-
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [{ 
-        role: 'user', 
-        content: `Translate the following topic to English. Only output the English translation, nothing else.\n\nTopic: ${topic}` 
-      }],
-      temperature: 0,
-      max_tokens: 50,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`OpenAI API error: ${response.status}`);
-  }
-
-  const data = await response.json() as { 
-    choices: Array<{ message: { content: string } }> 
-  };
+// Search Google News via Serper - in user's language with localized geo
+async function searchNews(topic: string, language: string, apiKey: string): Promise<SerperNewsResult[]> {
+  const config = LANGUAGE_CONFIG[language] || LANGUAGE_CONFIG.en;
   
-  return data.choices[0]?.message?.content?.trim() || topic;
-}
-
-// Search Google News via Serper (always in English)
-async function searchNews(englishTopic: string, apiKey: string): Promise<SerperNewsResult[]> {
+  console.log(`Searching "${topic}" with hl=${config.hl}, gl=${config.gl}`);
+  
   const response = await fetch('https://google.serper.dev/news', {
     method: 'POST',
     headers: {
@@ -81,10 +51,9 @@ async function searchNews(englishTopic: string, apiKey: string): Promise<SerperN
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      q: englishTopic,
-      page: 1,
-      gl: 'us',
-      hl: 'en',
+      q: topic,
+      gl: config.gl,
+      hl: config.hl,
     }),
   });
 
@@ -148,22 +117,24 @@ async function scrapeAllNewsPages(
   return contentMap;
 }
 
-// Summarize a single news article
+// Summarize a single news article in the specified language
 async function summarizeSingleNews(
   item: SerperNewsResult,
   content: string,
+  language: string,
   apiKey: string
 ): Promise<string> {
+  const config = LANGUAGE_CONFIG[language] || LANGUAGE_CONFIG.en;
   const contentToUse = content && content.length > 100 ? content : item.snippet;
   
-  const prompt = `You are a news summarizer. Create a concise summary in English (around 150 words). Focus on the key facts and main points.
+  const prompt = `You are a news summarizer. Create a concise summary in ${config.name} (around 150 words). Focus on the key facts and main points.
 
 Title: ${item.title}
 Source: ${item.source}
 Content:
 ${contentToUse}
 
-Output only the summary text, nothing else.`;
+Output only the summary text in ${config.name}, nothing else.`;
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -196,16 +167,17 @@ Output only the summary text, nothing else.`;
   }
 }
 
-// Summarize news in English using full scraped content - PARALLEL
-async function summarizeNewsEnglish(
+// Summarize news in user's language using full scraped content - PARALLEL
+async function summarizeNews(
   newsItems: SerperNewsResult[],
   contentMap: Map<string, string>,
+  language: string,
   apiKey: string
 ): Promise<NewsItem[]> {
   // Summarize all articles in parallel
   const summaryPromises = newsItems.map(async (item) => {
     const fullContent = contentMap.get(item.link) || '';
-    const summary = await summarizeSingleNews(item, fullContent, apiKey);
+    const summary = await summarizeSingleNews(item, fullContent, language, apiKey);
     return {
       title: item.title,
       source: item.source,
@@ -216,81 +188,6 @@ async function summarizeNewsEnglish(
   });
 
   return Promise.all(summaryPromises);
-}
-
-// Translate a single news item
-async function translateSingleNews(
-  item: NewsItem,
-  targetLanguage: string,
-  apiKey: string
-): Promise<NewsItem> {
-  const targetLang = LANGUAGE_NAMES[targetLanguage] || 'English';
-  
-  const prompt = `Translate the following news title and summary to ${targetLang}. Maintain the same level of detail.
-
-Title: ${item.title}
-Summary: ${item.summary}
-
-Respond with JSON in this exact format:
-{"title": "translated title", "summary": "translated summary"}
-
-Output only the JSON, nothing else.`;
-
-  try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.3,
-        max_tokens: 800,
-      }),
-    });
-
-    if (!response.ok) {
-      console.log(`Translation error for ${item.title}: ${response.status}`);
-      return item;
-    }
-
-    const data = await response.json() as { 
-      choices: Array<{ message: { content: string } }> 
-    };
-    
-    const content = data.choices[0]?.message?.content || '{}';
-    
-    try {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      const translation = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
-      return {
-        ...item,
-        title: translation.title || item.title,
-        summary: translation.summary || item.summary,
-      };
-    } catch {
-      return item;
-    }
-  } catch (error) {
-    console.log(`Translation error for ${item.title}:`, error);
-    return item;
-  }
-}
-
-// Translate news to target language - PARALLEL
-async function translateNews(
-  newsItems: NewsItem[],
-  targetLanguage: string,
-  apiKey: string
-): Promise<NewsItem[]> {
-  // Translate all items in parallel
-  const translatePromises = newsItems.map((item) => 
-    translateSingleNews(item, targetLanguage, apiKey)
-  );
-
-  return Promise.all(translatePromises);
 }
 
 // Handle news API request
@@ -317,72 +214,41 @@ async function handleNewsRequest(request: Request, env: Env): Promise<Response> 
       );
     }
 
-    // Step 1: Translate topic to English
-    const englishTopic = await translateTopicToEnglish(topic, env.OPENAI_API_KEY);
-    console.log(`Topic "${topic}" translated to English: "${englishTopic}"`);
-
-    // Step 2: Check if translated version exists in cache
-    const langCacheKey = getCacheKey(englishTopic, language);
-    const cachedLang = await env.TALKUP_CACHE.get(langCacheKey);
+    // Step 1: Check cache (topic + language)
+    const cacheKey = getCacheKey(topic, language);
+    const cached = await env.TALKUP_CACHE.get(cacheKey);
     
-    if (cachedLang) {
-      console.log(`Cache hit: ${langCacheKey}`);
-      return new Response(cachedLang, {
+    if (cached) {
+      console.log(`Cache hit: ${cacheKey}`);
+      return new Response(cached, {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Step 3: Check if English version exists in cache
-    const enCacheKey = getCacheKey(englishTopic, 'en');
-    const cachedEn = await env.TALKUP_CACHE.get(enCacheKey);
+    // Step 2: Search Google News in user's language with localized geo
+    console.log(`Searching news for: "${topic}" in ${language}`);
+    const newsResults = await searchNews(topic, language, env.SERPER_API_KEY);
     
-    let englishNews: NewsItem[];
-    
-    if (cachedEn) {
-      console.log(`English cache hit: ${enCacheKey}`);
-      englishNews = JSON.parse(cachedEn).news;
-    } else {
-      // Step 4: Search Google News
-      console.log(`Searching news for: ${englishTopic}`);
-      const newsResults = await searchNews(englishTopic, env.SERPER_API_KEY);
-      
-      if (newsResults.length === 0) {
-        return new Response(
-          JSON.stringify({ news: [], message: 'No news found' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      // Step 5: Scrape all news pages in parallel
-      console.log(`Scraping ${newsResults.length} news pages...`);
-      const contentMap = await scrapeAllNewsPages(newsResults, env.SERPER_API_KEY);
-      console.log(`Scraped ${contentMap.size} pages successfully`);
-
-      // Step 6: Summarize in English using full content
-      englishNews = await summarizeNewsEnglish(newsResults, contentMap, env.OPENAI_API_KEY);
-      
-      // Cache English version
-      const enResponseData = JSON.stringify({ news: englishNews });
-      await env.TALKUP_CACHE.put(enCacheKey, enResponseData, { expirationTtl: 86400 });
-      console.log(`Cached English news: ${enCacheKey}`);
+    if (newsResults.length === 0) {
+      return new Response(
+        JSON.stringify({ news: [], message: 'No news found' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Step 5: If requested language is English, return directly
-    if (language === 'en') {
-      const responseData = JSON.stringify({ news: englishNews });
-      return new Response(responseData, {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // Step 3: Scrape all news pages in parallel
+    console.log(`Scraping ${newsResults.length} news pages...`);
+    const contentMap = await scrapeAllNewsPages(newsResults, env.SERPER_API_KEY);
+    console.log(`Scraped ${contentMap.size} pages successfully`);
 
-    // Step 6: Translate to target language
-    console.log(`Translating news to: ${language}`);
-    const translatedNews = await translateNews(englishNews, language, env.OPENAI_API_KEY);
+    // Step 4: Summarize in user's language
+    console.log(`Summarizing in ${language}...`);
+    const news = await summarizeNews(newsResults, contentMap, language, env.OPENAI_API_KEY);
     
-    // Cache translated version
-    const responseData = JSON.stringify({ news: translatedNews });
-    await env.TALKUP_CACHE.put(langCacheKey, responseData, { expirationTtl: 86400 });
-    console.log(`Cached translated news: ${langCacheKey}`);
+    // Step 5: Cache and return
+    const responseData = JSON.stringify({ news });
+    await env.TALKUP_CACHE.put(cacheKey, responseData, { expirationTtl: 86400 });
+    console.log(`Cached news: ${cacheKey}`);
 
     return new Response(responseData, {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
