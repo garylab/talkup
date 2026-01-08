@@ -80,5 +80,26 @@
     "loading": "Chargement des actualités...",
     "noNews": "Aucune actualité trouvée",
     "tryAgain": "Veuillez réessayer plus tard"
+  },
+  "analysis": {
+    "title": "Analyse du Discours",
+    "analyze": "Analyser",
+    "analyzing": "Analyse en cours...",
+    "transcribing": "Transcription...",
+    "viewAnalysis": "Voir l'Analyse",
+    "analysisTab": "Analyse",
+    "transcriptTab": "Transcription",
+    "overallScore": "Score Global",
+    "wpm": "Mots/min",
+    "pauseRatio": "Ratio de Pauses",
+    "totalWords": "Total Mots",
+    "totalPauses": "Pauses",
+    "detailedAnalysis": "Analyse Détaillée",
+    "deliveryLanguage": "Expression et Langage",
+    "structureLogic": "Structure et Logique",
+    "contentQuality": "Qualité du Contenu",
+    "engagementPresence": "Engagement et Présence",
+    "noTranscript": "Aucune transcription disponible",
+    "error": "Échec de l'analyse"
   }
 }

@@ -80,5 +80,26 @@
     "loading": "ニュースを読み込み中...",
     "noNews": "関連ニュースがありません",
     "tryAgain": "後でもう一度お試しください"
+  },
+  "analysis": {
+    "title": "スピーチ分析",
+    "analyze": "分析",
+    "analyzing": "分析中...",
+    "transcribing": "文字起こし中...",
+    "viewAnalysis": "分析を見る",
+    "analysisTab": "分析",
+    "transcriptTab": "文字起こし",
+    "overallScore": "総合スコア",
+    "wpm": "語/分",
+    "pauseRatio": "ポーズ率",
+    "totalWords": "総語数",
+    "totalPauses": "ポーズ数",
+    "detailedAnalysis": "詳細分析",
+    "deliveryLanguage": "伝達と言語",
+    "structureLogic": "構造と論理",
+    "contentQuality": "内容の質",
+    "engagementPresence": "魅力と存在感",
+    "noTranscript": "文字起こしがありません",
+    "error": "分析に失敗しました"
   }
 }

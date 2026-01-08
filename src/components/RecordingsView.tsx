@@ -1,9 +1,12 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Trash2, Mic, Video, ChevronRight as ChevronRightIcon, Loader2, Share2, ListMusic } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Trash2, Mic, Video, ChevronRight as ChevronRightIcon, Loader2, Share2, ListMusic, Sparkles, BarChart3 } from 'lucide-react';
 import { getBlobUrl } from '@/lib/storage';
 import { cn, formatDuration, formatDate, formatFileSize } from '@/lib/utils';
+import { useAnalysis } from '@/hooks/useAnalysis';
+import { AnalysisPanel } from './AnalysisPanel';
+import type { RecordingAnalysis } from '@/types';
 
 interface Recording {
   id: string;
@@ -20,15 +23,22 @@ interface RecordingsViewProps {
   onRemove: (id: string) => void;
   onClearAll: () => void;
   t: (key: string) => string;
+  locale: string;
 }
 
 const ITEMS_PER_PAGE = 10;
 
-export function RecordingsView({ recordings, onRemove, onClearAll, t }: RecordingsViewProps) {
+export function RecordingsView({ recordings, onRemove, onClearAll, t, locale }: RecordingsViewProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [blobUrls, setBlobUrls] = useState<Record<string, string>>({});
   const [loadingBlob, setLoadingBlob] = useState<string | null>(null);
+  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+  const [analysisStatus, setAnalysisStatus] = useState<RecordingAnalysis['status'] | null>(null);
+  const [showAnalysisPanel, setShowAnalysisPanel] = useState(false);
+  const [selectedAnalysis, setSelectedAnalysis] = useState<RecordingAnalysis | null>(null);
+  
+  const { analyzeRecording, getAnalysis, hasAnalysis } = useAnalysis();
 
   // Cleanup blob URLs on unmount
   useEffect(() => {
@@ -103,6 +113,41 @@ export function RecordingsView({ recordings, onRemove, onClearAll, t }: Recordin
     a.click();
     document.body.removeChild(a);
   }, []);
+
+  // Analyze recording
+  const handleAnalyze = useCallback(async (recording: Recording, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    
+    // If already analyzed, show the panel
+    if (hasAnalysis(recording.id)) {
+      const existingAnalysis = getAnalysis(recording.id);
+      if (existingAnalysis) {
+        setSelectedAnalysis(existingAnalysis);
+        setShowAnalysisPanel(true);
+      }
+      return;
+    }
+    
+    // Start analysis
+    setAnalyzingId(recording.id);
+    setAnalysisStatus('pending');
+    
+    try {
+      const result = await analyzeRecording(
+        recording.id,
+        recording.topic,
+        locale,
+        (status) => setAnalysisStatus(status)
+      );
+      setSelectedAnalysis(result);
+      setShowAnalysisPanel(true);
+    } catch (error) {
+      console.error('Analysis failed:', error);
+    } finally {
+      setAnalyzingId(null);
+      setAnalysisStatus(null);
+    }
+  }, [analyzeRecording, getAnalysis, hasAnalysis, locale]);
 
   // Share recording
   const handleShare = useCallback(async (id: string, title: string, e?: React.MouseEvent) => {
@@ -235,6 +280,27 @@ export function RecordingsView({ recordings, onRemove, onClearAll, t }: Recordin
 
                 {/* Actions */}
                 <div className="flex items-center gap-0.5">
+                  {/* Analyze button - only for audio */}
+                  {recording.type === 'audio' && (
+                    <button
+                      onClick={(e) => handleAnalyze(recording, e)}
+                      disabled={analyzingId === recording.id}
+                      className={cn(
+                        'btn-ghost p-2',
+                        hasAnalysis(recording.id) ? 'text-emerald-400' : 'text-amber-400 hover:text-amber-300'
+                      )}
+                      title={hasAnalysis(recording.id) ? t('analysis.viewAnalysis') : t('analysis.analyze')}
+                    >
+                      {analyzingId === recording.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : hasAnalysis(recording.id) ? (
+                        <BarChart3 className="w-4 h-4" />
+                      ) : (
+                        <Sparkles className="w-4 h-4" />
+                      )}
+                    </button>
+                  )}
+                  
                   <button
                     onClick={(e) => handleShare(recording.id, getDisplayName(recording), e)}
                     className="btn-ghost p-2"
@@ -288,6 +354,18 @@ export function RecordingsView({ recordings, onRemove, onClearAll, t }: Recordin
                       </div>
                     )}
                   </div>
+                  
+                  {/* Analysis status indicator */}
+                  {analyzingId === recording.id && analysisStatus && (
+                    <div className="mt-3 flex items-center justify-center gap-2 text-sm text-zinc-400">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>
+                        {analysisStatus === 'transcribing' && t('analysis.transcribing')}
+                        {analysisStatus === 'analyzing' && t('analysis.analyzing')}
+                        {analysisStatus === 'pending' && t('analysis.analyzing')}
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -337,6 +415,18 @@ export function RecordingsView({ recordings, onRemove, onClearAll, t }: Recordin
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
+      )}
+
+      {/* Analysis Panel */}
+      {showAnalysisPanel && selectedAnalysis && (
+        <AnalysisPanel
+          analysis={selectedAnalysis}
+          onClose={() => {
+            setShowAnalysisPanel(false);
+            setSelectedAnalysis(null);
+          }}
+          t={t}
+        />
       )}
     </div>
   );

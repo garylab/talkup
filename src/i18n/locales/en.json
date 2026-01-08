@@ -80,5 +80,26 @@
     "loading": "Loading news...",
     "noNews": "No related news found",
     "tryAgain": "Please try again later"
+  },
+  "analysis": {
+    "title": "Speech Analysis",
+    "analyze": "Analyze",
+    "analyzing": "Analyzing...",
+    "transcribing": "Transcribing...",
+    "viewAnalysis": "View Analysis",
+    "analysisTab": "Analysis",
+    "transcriptTab": "Transcript",
+    "overallScore": "Overall Score",
+    "wpm": "Words/min",
+    "pauseRatio": "Pause Ratio",
+    "totalWords": "Total Words",
+    "totalPauses": "Pauses",
+    "detailedAnalysis": "Detailed Analysis",
+    "deliveryLanguage": "Delivery & Language",
+    "structureLogic": "Structure & Logic",
+    "contentQuality": "Content Quality",
+    "engagementPresence": "Engagement & Presence",
+    "noTranscript": "No transcript available",
+    "error": "Analysis failed"
   }
 }

@@ -137,6 +137,7 @@ export function HomePage({ locale }: HomePageProps) {
                 onRemove={removeRecording}
                 onClearAll={clearAllRecordings}
                 t={t}
+                locale={effectiveLocale}
               />
             </div>
           </div>

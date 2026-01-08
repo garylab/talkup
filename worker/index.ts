@@ -5,6 +5,65 @@ interface Env {
   OPENAI_API_KEY: string;
 }
 
+// Transcript types
+interface WhisperSegment {
+  id: number;
+  start: number;
+  end: number;
+  text: string;
+}
+
+interface WhisperResponse {
+  text: string;
+  segments: WhisperSegment[];
+  language: string;
+  duration: number;
+}
+
+interface TranscriptSegment {
+  id: number;
+  start: number;
+  end: number;
+  text: string;
+}
+
+interface TranscriptParagraph {
+  id: number;
+  startTime: number;
+  endTime: number;
+  text: string;
+  segments: TranscriptSegment[];
+}
+
+interface Transcript {
+  segments: TranscriptSegment[];
+  paragraphs: TranscriptParagraph[];
+  fullText: string;
+  duration: number;
+  language: string;
+}
+
+interface AnalysisCategory {
+  score: number;
+  feedback: string;
+  strengths: string[];
+  improvements: string[];
+}
+
+interface SpeechAnalysis {
+  deliveryAndLanguage: AnalysisCategory;
+  structureAndLogic: AnalysisCategory;
+  contentQuality: AnalysisCategory;
+  engagementAndPresence: AnalysisCategory;
+  overallPerformance: AnalysisCategory;
+  wordsPerMinute: number;
+  pauseRatio: number;
+  totalWords: number;
+  totalPauses: number;
+  averagePauseDuration: number;
+  summary: string;
+}
+
 interface SerperNewsResult {
   title: string;
   link: string;
@@ -189,6 +248,281 @@ async function summarizeNews(
   return Promise.all(summaryPromises);
 }
 
+// Group segments into paragraphs based on pauses
+function groupIntoParagraphs(segments: TranscriptSegment[], pauseThreshold: number = 1.5): TranscriptParagraph[] {
+  if (segments.length === 0) return [];
+  
+  const paragraphs: TranscriptParagraph[] = [];
+  let currentParagraph: TranscriptSegment[] = [segments[0]];
+  
+  for (let i = 1; i < segments.length; i++) {
+    const prevEnd = segments[i - 1].end;
+    const currStart = segments[i].start;
+    const pause = currStart - prevEnd;
+    
+    if (pause >= pauseThreshold) {
+      // Start new paragraph
+      paragraphs.push({
+        id: paragraphs.length,
+        startTime: currentParagraph[0].start,
+        endTime: currentParagraph[currentParagraph.length - 1].end,
+        text: currentParagraph.map(s => s.text).join(' ').trim(),
+        segments: currentParagraph,
+      });
+      currentParagraph = [segments[i]];
+    } else {
+      currentParagraph.push(segments[i]);
+    }
+  }
+  
+  // Add last paragraph
+  if (currentParagraph.length > 0) {
+    paragraphs.push({
+      id: paragraphs.length,
+      startTime: currentParagraph[0].start,
+      endTime: currentParagraph[currentParagraph.length - 1].end,
+      text: currentParagraph.map(s => s.text).join(' ').trim(),
+      segments: currentParagraph,
+    });
+  }
+  
+  return paragraphs;
+}
+
+// Calculate speech metrics
+function calculateMetrics(segments: TranscriptSegment[], totalDuration: number): {
+  wordsPerMinute: number;
+  pauseRatio: number;
+  totalWords: number;
+  totalPauses: number;
+  averagePauseDuration: number;
+} {
+  const fullText = segments.map(s => s.text).join(' ');
+  const totalWords = fullText.split(/\s+/).filter(w => w.length > 0).length;
+  
+  // Calculate total speaking time
+  let totalSpeakingTime = 0;
+  let totalPauseTime = 0;
+  let pauseCount = 0;
+  
+  for (let i = 0; i < segments.length; i++) {
+    totalSpeakingTime += segments[i].end - segments[i].start;
+    
+    if (i > 0) {
+      const pause = segments[i].start - segments[i - 1].end;
+      if (pause > 0.3) { // Count pauses longer than 300ms
+        totalPauseTime += pause;
+        pauseCount++;
+      }
+    }
+  }
+  
+  const speakingMinutes = totalSpeakingTime / 60;
+  const wordsPerMinute = speakingMinutes > 0 ? Math.round(totalWords / speakingMinutes) : 0;
+  const pauseRatio = totalDuration > 0 ? Math.round((totalPauseTime / totalDuration) * 100) : 0;
+  const averagePauseDuration = pauseCount > 0 ? totalPauseTime / pauseCount : 0;
+  
+  return {
+    wordsPerMinute,
+    pauseRatio,
+    totalWords,
+    totalPauses: pauseCount,
+    averagePauseDuration: Math.round(averagePauseDuration * 100) / 100,
+  };
+}
+
+// Transcribe audio using OpenAI Whisper
+async function transcribeAudio(audioBlob: Blob, apiKey: string): Promise<WhisperResponse> {
+  const formData = new FormData();
+  formData.append('file', audioBlob, 'audio.webm');
+  formData.append('model', 'whisper-1');
+  formData.append('response_format', 'verbose_json');
+  formData.append('timestamp_granularities[]', 'segment');
+  
+  const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: formData,
+  });
+  
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Whisper API error: ${response.status} - ${error}`);
+  }
+  
+  return response.json() as Promise<WhisperResponse>;
+}
+
+// Analyze speech quality using ChatGPT
+async function analyzeSpeech(
+  transcript: Transcript,
+  topic: string | null,
+  language: string,
+  apiKey: string
+): Promise<SpeechAnalysis> {
+  const config = LANGUAGE_CONFIG[language] || LANGUAGE_CONFIG.en;
+  
+  const prompt = `You are an expert speech coach. Analyze the following speech transcript and provide detailed feedback.
+
+Topic: ${topic || 'Not specified'}
+Duration: ${Math.round(transcript.duration)} seconds
+Words: ${transcript.fullText.split(/\s+/).length}
+Language: ${config.name}
+
+Transcript:
+${transcript.fullText}
+
+Provide analysis in the following JSON format (respond ONLY with valid JSON, no markdown):
+{
+  "deliveryAndLanguage": {
+    "score": <1-10>,
+    "feedback": "<detailed feedback in ${config.name}>",
+    "strengths": ["<strength 1 in ${config.name}>", "<strength 2>"],
+    "improvements": ["<improvement 1 in ${config.name}>", "<improvement 2>"]
+  },
+  "structureAndLogic": {
+    "score": <1-10>,
+    "feedback": "<detailed feedback in ${config.name}>",
+    "strengths": ["<strength 1>", "<strength 2>"],
+    "improvements": ["<improvement 1>", "<improvement 2>"]
+  },
+  "contentQuality": {
+    "score": <1-10>,
+    "feedback": "<detailed feedback in ${config.name}>",
+    "strengths": ["<strength 1>", "<strength 2>"],
+    "improvements": ["<improvement 1>", "<improvement 2>"]
+  },
+  "engagementAndPresence": {
+    "score": <1-10>,
+    "feedback": "<detailed feedback in ${config.name}>",
+    "strengths": ["<strength 1>", "<strength 2>"],
+    "improvements": ["<improvement 1>", "<improvement 2>"]
+  },
+  "overallPerformance": {
+    "score": <1-10>,
+    "feedback": "<detailed feedback in ${config.name}>",
+    "strengths": ["<strength 1>", "<strength 2>"],
+    "improvements": ["<improvement 1>", "<improvement 2>"]
+  },
+  "summary": "<2-3 sentence overall summary in ${config.name}>"
+}
+
+Evaluation criteria:
+- Delivery & Language: pronunciation, fluency, vocabulary, grammar, pace
+- Structure & Logic: organization, transitions, coherence, logical flow
+- Content Quality: relevance, depth, accuracy, examples
+- Engagement & Presence: expressiveness, confidence, connection with audience
+- Overall Performance: holistic assessment considering all aspects`;
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.3,
+      max_tokens: 2000,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`ChatGPT API error: ${response.status} - ${error}`);
+  }
+
+  const data = await response.json() as { 
+    choices: Array<{ message: { content: string } }> 
+  };
+  
+  const content = data.choices[0]?.message?.content?.trim() || '';
+  
+  // Parse JSON response
+  try {
+    const analysis = JSON.parse(content);
+    return analysis as SpeechAnalysis;
+  } catch {
+    throw new Error('Failed to parse analysis response');
+  }
+}
+
+// Handle transcribe API request
+async function handleTranscribeRequest(request: Request, env: Env): Promise<Response> {
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
+
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const formData = await request.formData();
+    const audioFile = formData.get('audio') as Blob | null;
+    const topic = formData.get('topic') as string | null;
+    const language = (formData.get('language') as string) || 'en';
+
+    if (!audioFile) {
+      return new Response(
+        JSON.stringify({ error: 'Audio file is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`Transcribing audio: ${audioFile.size} bytes, topic: ${topic}, lang: ${language}`);
+
+    // Step 1: Transcribe with Whisper
+    const whisperResponse = await transcribeAudio(audioFile, env.OPENAI_API_KEY);
+    
+    const segments: TranscriptSegment[] = whisperResponse.segments.map(s => ({
+      id: s.id,
+      start: s.start,
+      end: s.end,
+      text: s.text.trim(),
+    }));
+
+    // Step 2: Group into paragraphs
+    const paragraphs = groupIntoParagraphs(segments);
+
+    // Step 3: Calculate metrics
+    const metrics = calculateMetrics(segments, whisperResponse.duration);
+
+    const transcript: Transcript = {
+      segments,
+      paragraphs,
+      fullText: whisperResponse.text.trim(),
+      duration: whisperResponse.duration,
+      language: whisperResponse.language,
+    };
+
+    // Step 4: Analyze speech
+    const analysisResult = await analyzeSpeech(transcript, topic, language, env.OPENAI_API_KEY);
+    
+    // Merge metrics into analysis
+    const analysis: SpeechAnalysis = {
+      ...analysisResult,
+      ...metrics,
+    };
+
+    return new Response(
+      JSON.stringify({ transcript, analysis }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('Transcribe API error:', error);
+    return new Response(
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Failed to transcribe' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+}
+
 // Handle news API request
 async function handleNewsRequest(request: Request, env: Env): Promise<Response> {
   const corsHeaders = {
@@ -272,6 +606,10 @@ export default {
     // Handle API routes
     if (url.pathname === '/api/news') {
       return handleNewsRequest(request, env);
+    }
+    
+    if (url.pathname === '/api/transcribe') {
+      return handleTranscribeRequest(request, env);
     }
     
     // Handle root path

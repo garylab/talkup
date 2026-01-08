@@ -80,5 +80,26 @@
     "loading": "Nachrichten werden geladen...",
     "noNews": "Keine Nachrichten gefunden",
     "tryAgain": "Bitte versuchen Sie es später erneut"
+  },
+  "analysis": {
+    "title": "Sprachanalyse",
+    "analyze": "Analysieren",
+    "analyzing": "Analysiere...",
+    "transcribing": "Transkribiere...",
+    "viewAnalysis": "Analyse Anzeigen",
+    "analysisTab": "Analyse",
+    "transcriptTab": "Transkript",
+    "overallScore": "Gesamtbewertung",
+    "wpm": "Wörter/Min",
+    "pauseRatio": "Pausenanteil",
+    "totalWords": "Gesamtwörter",
+    "totalPauses": "Pausen",
+    "detailedAnalysis": "Detaillierte Analyse",
+    "deliveryLanguage": "Vortrag & Sprache",
+    "structureLogic": "Struktur & Logik",
+    "contentQuality": "Inhaltsqualität",
+    "engagementPresence": "Engagement & Präsenz",
+    "noTranscript": "Kein Transkript verfügbar",
+    "error": "Analyse fehlgeschlagen"
   }
 }

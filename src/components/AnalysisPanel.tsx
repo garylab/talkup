@@ -1,0 +1,285 @@
+'use client';
+
+import { useState } from 'react';
+import { X, FileText, BarChart3, Clock, Gauge, MessageSquare, ChevronDown, ChevronRight, Play, Pause } from 'lucide-react';
+import { cn, formatDuration } from '@/lib/utils';
+import type { RecordingAnalysis, AnalysisCategory, TranscriptParagraph } from '@/types';
+
+interface AnalysisPanelProps {
+  analysis: RecordingAnalysis;
+  onClose: () => void;
+  t: (key: string) => string;
+}
+
+type TabId = 'transcript' | 'analysis';
+
+function ScoreCircle({ score, size = 'md' }: { score: number; size?: 'sm' | 'md' | 'lg' }) {
+  const sizeClasses = {
+    sm: 'w-10 h-10 text-sm',
+    md: 'w-14 h-14 text-lg',
+    lg: 'w-20 h-20 text-2xl',
+  };
+  
+  const getColor = (score: number) => {
+    if (score >= 8) return 'text-emerald-400 border-emerald-400/30 bg-emerald-500/10';
+    if (score >= 6) return 'text-amber-400 border-amber-400/30 bg-amber-500/10';
+    return 'text-red-400 border-red-400/30 bg-red-500/10';
+  };
+
+  return (
+    <div className={cn(
+      'rounded-full border-2 flex items-center justify-center font-bold',
+      sizeClasses[size],
+      getColor(score)
+    )}>
+      {score}
+    </div>
+  );
+}
+
+function CategoryCard({ 
+  title, 
+  category, 
+  icon: Icon 
+}: { 
+  title: string; 
+  category: AnalysisCategory;
+  icon: React.ElementType;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <div className="surface overflow-hidden">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center gap-3 p-4"
+      >
+        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0">
+          <Icon className="w-5 h-5 text-zinc-400" />
+        </div>
+        <div className="flex-1 text-left">
+          <h4 className="font-medium text-white">{title}</h4>
+          <p className="text-xs text-zinc-500 line-clamp-1 mt-0.5">{category.feedback}</p>
+        </div>
+        <ScoreCircle score={category.score} size="sm" />
+        {isExpanded ? (
+          <ChevronDown className="w-4 h-4 text-zinc-500" />
+        ) : (
+          <ChevronRight className="w-4 h-4 text-zinc-500" />
+        )}
+      </button>
+      
+      {isExpanded && (
+        <div className="px-4 pb-4 pt-0 border-t border-white/5 mt-0 animate-fade-in">
+          <p className="text-sm text-zinc-300 mb-4 mt-4">{category.feedback}</p>
+          
+          {category.strengths.length > 0 && (
+            <div className="mb-3">
+              <h5 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-2">Strengths</h5>
+              <ul className="space-y-1">
+                {category.strengths.map((s, i) => (
+                  <li key={i} className="text-sm text-zinc-400 flex items-start gap-2">
+                    <span className="text-emerald-400 mt-1">✓</span>
+                    {s}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          
+          {category.improvements.length > 0 && (
+            <div>
+              <h5 className="text-xs font-semibold text-amber-400 uppercase tracking-wider mb-2">Areas to Improve</h5>
+              <ul className="space-y-1">
+                {category.improvements.map((s, i) => (
+                  <li key={i} className="text-sm text-zinc-400 flex items-start gap-2">
+                    <span className="text-amber-400 mt-1">→</span>
+                    {s}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TranscriptView({ 
+  paragraphs,
+  t 
+}: { 
+  paragraphs: TranscriptParagraph[];
+  t: (key: string) => string;
+}) {
+  if (paragraphs.length === 0) {
+    return (
+      <div className="flex items-center justify-center py-12 text-zinc-500">
+        <p>{t('analysis.noTranscript')}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {paragraphs.map((paragraph) => (
+        <div key={paragraph.id} className="surface p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xs font-mono text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded">
+              {formatDuration(Math.floor(paragraph.startTime))}
+            </span>
+            <span className="text-zinc-700">→</span>
+            <span className="text-xs font-mono text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded">
+              {formatDuration(Math.floor(paragraph.endTime))}
+            </span>
+          </div>
+          <p className="text-sm text-zinc-300 leading-relaxed">{paragraph.text}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function AnalysisPanel({ analysis, onClose, t }: AnalysisPanelProps) {
+  const [activeTab, setActiveTab] = useState<TabId>('analysis');
+  
+  const { transcript, analysis: speechAnalysis } = analysis;
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-black/95 animate-fade-in" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      {/* Header */}
+      <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/10">
+        <h2 className="text-lg font-semibold">{t('analysis.title')}</h2>
+        <button
+          onClick={onClose}
+          className="p-2 rounded-full hover:bg-white/10 transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex-shrink-0 flex border-b border-white/10">
+        <button
+          onClick={() => setActiveTab('analysis')}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors',
+            activeTab === 'analysis' 
+              ? 'text-white border-b-2 border-white' 
+              : 'text-zinc-500 hover:text-zinc-300'
+          )}
+        >
+          <BarChart3 className="w-4 h-4" />
+          {t('analysis.analysisTab')}
+        </button>
+        <button
+          onClick={() => setActiveTab('transcript')}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors',
+            activeTab === 'transcript' 
+              ? 'text-white border-b-2 border-white' 
+              : 'text-zinc-500 hover:text-zinc-300'
+          )}
+        >
+          <FileText className="w-4 h-4" />
+          {t('analysis.transcriptTab')}
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto overscroll-contain">
+        {activeTab === 'analysis' ? (
+          <div className="p-4 pb-32 space-y-6">
+            {/* Overall Score */}
+            <div className="flex flex-col items-center py-6">
+              <ScoreCircle score={speechAnalysis.overallPerformance.score} size="lg" />
+              <h3 className="text-lg font-semibold mt-3">{t('analysis.overallScore')}</h3>
+              <p className="text-sm text-zinc-400 text-center mt-2 max-w-md">
+                {speechAnalysis.summary}
+              </p>
+            </div>
+
+            {/* Metrics */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="surface p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                  <Gauge className="w-5 h-5 text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-white">{speechAnalysis.wordsPerMinute}</p>
+                  <p className="text-xs text-zinc-500">{t('analysis.wpm')}</p>
+                </div>
+              </div>
+              
+              <div className="surface p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-purple-400" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-white">{speechAnalysis.pauseRatio}%</p>
+                  <p className="text-xs text-zinc-500">{t('analysis.pauseRatio')}</p>
+                </div>
+              </div>
+              
+              <div className="surface p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                  <MessageSquare className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-white">{speechAnalysis.totalWords}</p>
+                  <p className="text-xs text-zinc-500">{t('analysis.totalWords')}</p>
+                </div>
+              </div>
+              
+              <div className="surface p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                  <Pause className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-white">{speechAnalysis.totalPauses}</p>
+                  <p className="text-xs text-zinc-500">{t('analysis.totalPauses')}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Categories */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">
+                {t('analysis.detailedAnalysis')}
+              </h3>
+              
+              <CategoryCard
+                title={t('analysis.deliveryLanguage')}
+                category={speechAnalysis.deliveryAndLanguage}
+                icon={MessageSquare}
+              />
+              
+              <CategoryCard
+                title={t('analysis.structureLogic')}
+                category={speechAnalysis.structureAndLogic}
+                icon={BarChart3}
+              />
+              
+              <CategoryCard
+                title={t('analysis.contentQuality')}
+                category={speechAnalysis.contentQuality}
+                icon={FileText}
+              />
+              
+              <CategoryCard
+                title={t('analysis.engagementPresence')}
+                category={speechAnalysis.engagementAndPresence}
+                icon={Play}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="p-4 pb-32">
+            <TranscriptView paragraphs={transcript.paragraphs} t={t} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

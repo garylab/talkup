@@ -80,5 +80,26 @@
     "loading": "Cargando noticias...",
     "noNews": "No se encontraron noticias",
     "tryAgain": "Inténtelo de nuevo más tarde"
+  },
+  "analysis": {
+    "title": "Análisis de Discurso",
+    "analyze": "Analizar",
+    "analyzing": "Analizando...",
+    "transcribing": "Transcribiendo...",
+    "viewAnalysis": "Ver Análisis",
+    "analysisTab": "Análisis",
+    "transcriptTab": "Transcripción",
+    "overallScore": "Puntuación General",
+    "wpm": "Palabras/min",
+    "pauseRatio": "Ratio de Pausas",
+    "totalWords": "Total Palabras",
+    "totalPauses": "Pausas",
+    "detailedAnalysis": "Análisis Detallado",
+    "deliveryLanguage": "Entrega y Lenguaje",
+    "structureLogic": "Estructura y Lógica",
+    "contentQuality": "Calidad del Contenido",
+    "engagementPresence": "Engagement y Presencia",
+    "noTranscript": "Sin transcripción disponible",
+    "error": "Error en el análisis"
   }
 }

@@ -80,5 +80,26 @@
     "loading": "加载中...",
     "noNews": "暂无相关新闻",
     "tryAgain": "请稍后再试"
+  },
+  "analysis": {
+    "title": "语音分析",
+    "analyze": "分析",
+    "analyzing": "分析中...",
+    "transcribing": "转录中...",
+    "viewAnalysis": "查看分析",
+    "analysisTab": "分析",
+    "transcriptTab": "文字稿",
+    "overallScore": "综合评分",
+    "wpm": "每分钟字数",
+    "pauseRatio": "停顿比例",
+    "totalWords": "总字数",
+    "totalPauses": "停顿次数",
+    "detailedAnalysis": "详细分析",
+    "deliveryLanguage": "表达与语言",
+    "structureLogic": "结构与逻辑",
+    "contentQuality": "内容质量",
+    "engagementPresence": "感染力与风采",
+    "noTranscript": "暂无文字稿",
+    "error": "分析失败"
   }
 }
