@@ -6,6 +6,7 @@ import { NewsPanel } from './NewsPanel';
 import { cn, formatDuration } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
+import { useWakeLock } from '@/hooks/useWakeLock';
 import type { RecordingType } from '@/types';
 import type { RecorderState } from '@/hooks/useRecorder';
 
@@ -70,6 +71,9 @@ export function RecordingStudio({
   // Settings from localStorage
   const { settings, setRecordMode } = useSettings();
   const recordMode = settings.recordMode;
+  
+  // Wake lock to keep screen on while recording
+  const { request: requestWakeLock, release: releaseWakeLock } = useWakeLock();
 
   // Set media stream on video elements
   useEffect(() => {
@@ -77,6 +81,15 @@ export function RecordingStudio({
       videoRef.current.srcObject = mediaStream;
     }
   }, [mediaStream, recordingType]);
+
+  // Keep screen on while recording
+  useEffect(() => {
+    if (state === 'recording' || state === 'paused') {
+      requestWakeLock();
+    } else {
+      releaseWakeLock();
+    }
+  }, [state, requestWakeLock, releaseWakeLock]);
 
   // Enumerate available devices (cameras and microphones)
   useEffect(() => {
