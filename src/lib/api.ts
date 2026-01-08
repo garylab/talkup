@@ -72,16 +72,26 @@ class LocalApi {
     }
   }
 
-  // Transcribe and analyze audio recording
+  // Transcribe and analyze audio/video recording
   async transcribeAndAnalyze(
-    audioBlob: Blob,
+    mediaBlob: Blob,
     topic: string | null,
     language: string
   ): Promise<TranscribeResponse> {
     try {
       const baseUrl = getApiBaseUrl();
       const formData = new FormData();
-      formData.append('audio', audioBlob, 'audio.webm');
+      
+      // Determine file extension based on MIME type
+      const mimeType = mediaBlob.type || 'audio/webm';
+      let extension = 'webm';
+      if (mimeType.includes('mp4')) extension = 'mp4';
+      else if (mimeType.includes('m4a')) extension = 'm4a';
+      else if (mimeType.includes('wav')) extension = 'wav';
+      else if (mimeType.includes('mp3') || mimeType.includes('mpeg')) extension = 'mp3';
+      
+      const filename = mimeType.startsWith('video/') ? `video.${extension}` : `audio.${extension}`;
+      formData.append('audio', mediaBlob, filename);
       if (topic) formData.append('topic', topic);
       formData.append('language', language);
 

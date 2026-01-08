@@ -100,6 +100,8 @@
     "contentQuality": "Qualidade do Conteúdo",
     "engagementPresence": "Engajamento e Presença",
     "noTranscript": "Nenhuma transcrição disponível",
-    "error": "Falha na análise"
+    "error": "Falha na análise",
+    "strengths": "Pontos Fortes",
+    "improvements": "Áreas de Melhoria"
   }
 }

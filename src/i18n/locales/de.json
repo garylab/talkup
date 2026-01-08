@@ -100,6 +100,8 @@
     "contentQuality": "Inhaltsqualität",
     "engagementPresence": "Engagement & Präsenz",
     "noTranscript": "Kein Transkript verfügbar",
-    "error": "Analyse fehlgeschlagen"
+    "error": "Analyse fehlgeschlagen",
+    "strengths": "Stärken",
+    "improvements": "Verbesserungsbereiche"
   }
 }

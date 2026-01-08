@@ -280,26 +280,24 @@ export function RecordingsView({ recordings, onRemove, onClearAll, t, locale }: 
 
                 {/* Actions */}
                 <div className="flex items-center gap-0.5">
-                  {/* Analyze button - only for audio */}
-                  {recording.type === 'audio' && (
-                    <button
-                      onClick={(e) => handleAnalyze(recording, e)}
-                      disabled={analyzingId === recording.id}
-                      className={cn(
-                        'btn-ghost p-2',
-                        hasAnalysis(recording.id) ? 'text-emerald-400' : 'text-amber-400 hover:text-amber-300'
-                      )}
-                      title={hasAnalysis(recording.id) ? t('analysis.viewAnalysis') : t('analysis.analyze')}
-                    >
-                      {analyzingId === recording.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : hasAnalysis(recording.id) ? (
-                        <BarChart3 className="w-4 h-4" />
-                      ) : (
-                        <Sparkles className="w-4 h-4" />
-                      )}
-                    </button>
-                  )}
+                  {/* Analyze button - for both audio and video */}
+                  <button
+                    onClick={(e) => handleAnalyze(recording, e)}
+                    disabled={analyzingId === recording.id}
+                    className={cn(
+                      'btn-ghost p-2',
+                      hasAnalysis(recording.id) ? 'text-emerald-400' : 'text-amber-400 hover:text-amber-300'
+                    )}
+                    title={hasAnalysis(recording.id) ? t('analysis.viewAnalysis') : t('analysis.analyze')}
+                  >
+                    {analyzingId === recording.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : hasAnalysis(recording.id) ? (
+                      <BarChart3 className="w-4 h-4" />
+                    ) : (
+                      <Sparkles className="w-4 h-4" />
+                    )}
+                  </button>
                   
                   <button
                     onClick={(e) => handleShare(recording.id, getDisplayName(recording), e)}

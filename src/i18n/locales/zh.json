@@ -100,6 +100,8 @@
     "contentQuality": "内容质量",
     "engagementPresence": "感染力与风采",
     "noTranscript": "暂无文字稿",
-    "error": "分析失败"
+    "error": "分析失败",
+    "strengths": "优点",
+    "improvements": "待改进"
   }
 }

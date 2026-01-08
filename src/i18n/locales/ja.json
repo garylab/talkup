@@ -100,6 +100,8 @@
     "contentQuality": "内容の質",
     "engagementPresence": "魅力と存在感",
     "noTranscript": "文字起こしがありません",
-    "error": "分析に失敗しました"
+    "error": "分析に失敗しました",
+    "strengths": "長所",
+    "improvements": "改善点"
   }
 }

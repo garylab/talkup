@@ -40,11 +40,13 @@ function ScoreCircle({ score, size = 'md' }: { score: number; size?: 'sm' | 'md'
 function CategoryCard({ 
   title, 
   category, 
-  icon: Icon 
+  icon: Icon,
+  t 
 }: { 
   title: string; 
   category: AnalysisCategory;
   icon: React.ElementType;
+  t: (key: string) => string;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -75,7 +77,7 @@ function CategoryCard({
           
           {category.strengths.length > 0 && (
             <div className="mb-3">
-              <h5 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-2">Strengths</h5>
+              <h5 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-2">{t('analysis.strengths')}</h5>
               <ul className="space-y-1">
                 {category.strengths.map((s, i) => (
                   <li key={i} className="text-sm text-zinc-400 flex items-start gap-2">
@@ -89,7 +91,7 @@ function CategoryCard({
           
           {category.improvements.length > 0 && (
             <div>
-              <h5 className="text-xs font-semibold text-amber-400 uppercase tracking-wider mb-2">Areas to Improve</h5>
+              <h5 className="text-xs font-semibold text-amber-400 uppercase tracking-wider mb-2">{t('analysis.improvements')}</h5>
               <ul className="space-y-1">
                 {category.improvements.map((s, i) => (
                   <li key={i} className="text-sm text-zinc-400 flex items-start gap-2">
@@ -253,24 +255,28 @@ export function AnalysisPanel({ analysis, onClose, t }: AnalysisPanelProps) {
                 title={t('analysis.deliveryLanguage')}
                 category={speechAnalysis.deliveryAndLanguage}
                 icon={MessageSquare}
+                t={t}
               />
               
               <CategoryCard
                 title={t('analysis.structureLogic')}
                 category={speechAnalysis.structureAndLogic}
                 icon={BarChart3}
+                t={t}
               />
               
               <CategoryCard
                 title={t('analysis.contentQuality')}
                 category={speechAnalysis.contentQuality}
                 icon={FileText}
+                t={t}
               />
               
               <CategoryCard
                 title={t('analysis.engagementPresence')}
                 category={speechAnalysis.engagementAndPresence}
                 icon={Play}
+                t={t}
               />
             </div>
           </div>

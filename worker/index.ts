@@ -331,10 +331,11 @@ function calculateMetrics(segments: TranscriptSegment[], totalDuration: number):
   };
 }
 
-// Transcribe audio using OpenAI Whisper
-async function transcribeAudio(audioBlob: Blob, apiKey: string): Promise<WhisperResponse> {
+// Transcribe audio/video using OpenAI Whisper
+// Whisper supports: flac, mp3, mp4, mpeg, mpga, m4a, ogg, wav, webm
+async function transcribeMedia(mediaBlob: Blob, filename: string, apiKey: string): Promise<WhisperResponse> {
   const formData = new FormData();
-  formData.append('file', audioBlob, 'audio.webm');
+  formData.append('file', mediaBlob, filename);
   formData.append('model', 'whisper-1');
   formData.append('response_format', 'verbose_json');
   formData.append('timestamp_granularities[]', 'segment');
@@ -364,56 +365,74 @@ async function analyzeSpeech(
 ): Promise<SpeechAnalysis> {
   const config = LANGUAGE_CONFIG[language] || LANGUAGE_CONFIG.en;
   
-  const prompt = `You are an expert speech coach. Analyze the following speech transcript and provide detailed feedback.
+  const prompt = `You are an expert speech coach. Analyze the following speech transcript and provide specific, actionable feedback based on the ACTUAL CONTENT of the speech.
 
 Topic: ${topic || 'Not specified'}
 Duration: ${Math.round(transcript.duration)} seconds
 Words: ${transcript.fullText.split(/\s+/).length}
-Language: ${config.name}
 
 Transcript:
 ${transcript.fullText}
+
+OUTPUT LANGUAGE: All feedback, strengths, improvements, and summary MUST be written in ${config.name}. Do NOT use English unless the output language is English.
 
 Provide analysis in the following JSON format (respond ONLY with valid JSON, no markdown):
 {
   "deliveryAndLanguage": {
     "score": <1-10>,
-    "feedback": "<detailed feedback in ${config.name}>",
-    "strengths": ["<strength 1 in ${config.name}>", "<strength 2>"],
-    "improvements": ["<improvement 1 in ${config.name}>", "<improvement 2>"]
+    "feedback": "<detailed feedback>",
+    "strengths": ["<quote specific good phrases/words from transcript and explain why they work well>", "<strength 2>"],
+    "improvements": ["<quote specific words/phrases from transcript> → <suggest specific replacements in same language>", "<improvement 2>"]
   },
   "structureAndLogic": {
     "score": <1-10>,
-    "feedback": "<detailed feedback in ${config.name}>",
-    "strengths": ["<strength 1>", "<strength 2>"],
-    "improvements": ["<improvement 1>", "<improvement 2>"]
+    "feedback": "<detailed feedback>",
+    "strengths": ["<specific strength from transcript>", "<strength 2>"],
+    "improvements": ["<quote from transcript> → <better alternative phrasing/structure>", "<improvement 2>"]
   },
   "contentQuality": {
     "score": <1-10>,
-    "feedback": "<detailed feedback in ${config.name}>",
-    "strengths": ["<strength 1>", "<strength 2>"],
-    "improvements": ["<improvement 1>", "<improvement 2>"]
+    "feedback": "<detailed feedback>",
+    "strengths": ["<specific strength from transcript>", "<strength 2>"],
+    "improvements": ["<specific content issue from transcript> → <how to enhance with examples>", "<improvement 2>"]
   },
   "engagementAndPresence": {
     "score": <1-10>,
-    "feedback": "<detailed feedback in ${config.name}>",
-    "strengths": ["<strength 1>", "<strength 2>"],
-    "improvements": ["<improvement 1>", "<improvement 2>"]
+    "feedback": "<detailed feedback>",
+    "strengths": ["<specific strength from transcript>", "<strength 2>"],
+    "improvements": ["<specific issue from transcript> → <specific technique to improve>", "<improvement 2>"]
   },
   "overallPerformance": {
     "score": <1-10>,
-    "feedback": "<detailed feedback in ${config.name}>",
-    "strengths": ["<strength 1>", "<strength 2>"],
-    "improvements": ["<improvement 1>", "<improvement 2>"]
+    "feedback": "<detailed feedback>",
+    "strengths": ["<specific strength from transcript>", "<strength 2>"],
+    "improvements": ["<key issue from transcript> → <specific fix>", "<improvement 2>"]
   },
-  "summary": "<2-3 sentence overall summary in ${config.name}>"
+  "summary": "<2-3 sentence overall summary>"
 }
 
+CRITICAL RULES:
+1. ALL output text (feedback, strengths, improvements, summary) MUST be in ${config.name}
+2. For ALL improvements, you MUST:
+   - Quote the ACTUAL words/phrases from the transcript that need improvement
+   - Provide SPECIFIC alternative words/phrases to replace them
+   - Format as: "[quoted phrase from transcript] → [better alternatives]"
+
+Examples of GOOD improvements (format varies by language):
+- Chinese: "频繁使用'然后' → 可替换为'接着'、'随后'、'此外'"
+- English: "Overused 'and' as connector → Try: 'furthermore', 'moreover', 'on the other hand'"
+- Spanish: "Uso repetido de 'entonces' → Alternativas: 'por lo tanto', 'en consecuencia', 'así que'"
+
+Examples of BAD improvements (too generic, DO NOT do this):
+- "Improve vocabulary diversity" (no specific examples from transcript)
+- "Use better transitions" (doesn't quote what was actually said)
+- Generic advice not tied to the actual speech content
+
 Evaluation criteria:
-- Delivery & Language: pronunciation, fluency, vocabulary, grammar, pace
+- Delivery & Language: fluency, vocabulary variety, grammar, filler words, pace
 - Structure & Logic: organization, transitions, coherence, logical flow
-- Content Quality: relevance, depth, accuracy, examples
-- Engagement & Presence: expressiveness, confidence, connection with audience
+- Content Quality: relevance, depth, accuracy, supporting examples
+- Engagement & Presence: expressiveness, confidence, rhetorical devices
 - Overall Performance: holistic assessment considering all aspects`;
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -464,21 +483,23 @@ async function handleTranscribeRequest(request: Request, env: Env): Promise<Resp
 
   try {
     const formData = await request.formData();
-    const audioFile = formData.get('audio') as Blob | null;
+    const mediaFile = formData.get('audio') as File | null;
     const topic = formData.get('topic') as string | null;
     const language = (formData.get('language') as string) || 'en';
 
-    if (!audioFile) {
+    if (!mediaFile) {
       return new Response(
-        JSON.stringify({ error: 'Audio file is required' }),
+        JSON.stringify({ error: 'Media file is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Transcribing audio: ${audioFile.size} bytes, topic: ${topic}, lang: ${language}`);
+    // Get filename from the uploaded file, default to media.webm
+    const filename = mediaFile.name || 'media.webm';
+    console.log(`Transcribing media: ${mediaFile.size} bytes, filename: ${filename}, topic: ${topic}, lang: ${language}`);
 
-    // Step 1: Transcribe with Whisper
-    const whisperResponse = await transcribeAudio(audioFile, env.OPENAI_API_KEY);
+    // Step 1: Transcribe with Whisper (supports audio and video formats)
+    const whisperResponse = await transcribeMedia(mediaFile, filename, env.OPENAI_API_KEY);
     
     const segments: TranscriptSegment[] = whisperResponse.segments.map(s => ({
       id: s.id,
