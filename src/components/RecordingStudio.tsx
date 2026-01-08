@@ -28,6 +28,7 @@ interface RecordingStudioProps {
   onReset: () => void;
   topic: string | null;
   onTopicChange: (topic: string | null) => void;
+  isTopicHydrated: boolean;
   recordingType: RecordingType;
   // i18n
   t: (key: string) => string;
@@ -48,6 +49,7 @@ export function RecordingStudio({
   onReset,
   topic,
   onTopicChange,
+  isTopicHydrated,
   recordingType,
   t,
   topics,
@@ -213,21 +215,17 @@ export function RecordingStudio({
   // Track previous state to detect when returning from stopped
   const prevStateRef = useRef<RecorderState>(state);
   
-  // Auto-load topic on mount
+  // Update prevState ref
   useEffect(() => {
-    if (!topic && isIdle) {
-      handleGetTopic();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Auto-load new topic when returning from stopped state
-  useEffect(() => {
-    if (prevStateRef.current === 'stopped' && state === 'idle') {
-      handleGetTopic();
-    }
     prevStateRef.current = state;
-  }, [state, handleGetTopic]);
+  }, [state]);
+
+  // Auto-load topic only if none exists after hydration (e.g., first load or after language change)
+  useEffect(() => {
+    if (isTopicHydrated && !topic && isIdle) {
+      handleGetTopic();
+    }
+  }, [isTopicHydrated, topic, isIdle, handleGetTopic]);
 
   const handleCreateTopic = () => {
     if (customTopic.trim()) {

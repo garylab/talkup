@@ -7,7 +7,7 @@ import { RecordingsView } from '@/components/RecordingsView';
 import { SettingsView } from '@/components/SettingsView';
 import { BottomNavbar, TabId } from '@/components/BottomNavbar';
 import { useRecorder } from '@/hooks/useRecorder';
-import { useLocalRecordings } from '@/hooks/useLocalStorage';
+import { useLocalRecordings, useLocalStorage } from '@/hooks/useLocalStorage';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { useServiceWorker } from '@/hooks/useServiceWorker';
 import { t as translate, getTopics, Locale } from '@/i18n';
@@ -20,8 +20,8 @@ interface HomePageProps {
 
 export function HomePage({ locale }: HomePageProps) {
   // Use stored locale (if set) so language switches don't change the URL
-  const { locale: storedLocale } = useLocale(locale);
-  const effectiveLocale = storedLocale ?? locale;
+  const { locale: storedLocale, isHydrated: isLocaleHydrated } = useLocale(locale);
+  const effectiveLocale = isLocaleHydrated ? (storedLocale ?? locale) : locale;
 
   // i18n helper
   const t = (key: string) => translate(effectiveLocale, key);
@@ -30,8 +30,8 @@ export function HomePage({ locale }: HomePageProps) {
   // Tab navigation
   const [activeTab, setActiveTab] = useState<TabId>('home');
 
-  // Topic state
-  const [topic, setTopic] = useState<string | null>(null);
+  // Topic state - persisted to localStorage
+  const [topic, setTopic, isTopicHydrated] = useLocalStorage<string | null>('talkup-topic', null);
   
   // Local storage (metadata in localStorage, blobs in IndexedDB)
   const { recordings, isHydrated, addRecording, removeRecording, clearAllRecordings } = useLocalRecordings();
@@ -120,10 +120,11 @@ export function HomePage({ locale }: HomePageProps) {
             onReset={recorder.resetRecording}
             topic={topic}
             onTopicChange={setTopic}
+            isTopicHydrated={isTopicHydrated}
             recordingType={recorder.recordingType || 'video'}
             t={t}
             topics={topics}
-            locale={locale}
+            locale={effectiveLocale}
           />
         )}
 

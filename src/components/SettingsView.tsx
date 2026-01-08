@@ -26,6 +26,8 @@ export function SettingsView({ locale, isInstallable, isInstalled, onInstall, t 
     if (newLocale !== storedLocale) {
       setLocale(newLocale);
       if (typeof window !== 'undefined') {
+        // Clear topic so a new one is fetched in the new language
+        window.localStorage.removeItem('talkup-topic');
         // Reload so the selected language takes effect immediately
         window.location.reload();
       }
