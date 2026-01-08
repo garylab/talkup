@@ -1,19 +1,19 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Locale, locales, localeNames, localeFlags } from '@/i18n';
+import { useLocale } from '@/hooks/useLocale';
 
 interface LanguageSwitcherProps {
   locale: Locale;
 }
 
-export function LanguageSwitcher({ locale }: LanguageSwitcherProps) {
+export function LanguageSwitcher({ locale: defaultLocale }: LanguageSwitcherProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
+  const { locale, setLocale } = useLocale(defaultLocale);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -38,8 +38,11 @@ export function LanguageSwitcher({ locale }: LanguageSwitcherProps) {
   const handleSelect = (newLocale: Locale) => {
     setIsOpen(false);
     if (newLocale !== locale) {
-      const path = newLocale === 'en' ? '/' : `/${newLocale}`;
-      router.push(path);
+      setLocale(newLocale);
+      if (typeof window !== 'undefined') {
+        // Reload to ensure the new locale is applied throughout the app
+        window.location.reload();
+      }
     }
   };
 

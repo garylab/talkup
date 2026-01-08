@@ -11,6 +11,7 @@ import { useLocalRecordings } from '@/hooks/useLocalStorage';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { useServiceWorker } from '@/hooks/useServiceWorker';
 import { t as translate, getTopics, Locale } from '@/i18n';
+import { useLocale } from '@/hooks/useLocale';
 import type { RecordingType } from '@/types';
 
 interface HomePageProps {
@@ -18,9 +19,13 @@ interface HomePageProps {
 }
 
 export function HomePage({ locale }: HomePageProps) {
+  // Use stored locale (if set) so language switches don't change the URL
+  const { locale: storedLocale } = useLocale(locale);
+  const effectiveLocale = storedLocale ?? locale;
+
   // i18n helper
-  const t = (key: string) => translate(locale, key);
-  const topics = getTopics(locale);
+  const t = (key: string) => translate(effectiveLocale, key);
+  const topics = getTopics(effectiveLocale);
 
   // Tab navigation
   const [activeTab, setActiveTab] = useState<TabId>('home');

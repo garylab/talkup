@@ -1,10 +1,10 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { Globe, ChevronRight, Check, Info, Download, Newspaper } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Locale, locales, localeNames, localeFlags } from '@/i18n';
 import { useSettings } from '@/hooks/useSettings';
+import { useLocale } from '@/hooks/useLocale';
 
 interface SettingsViewProps {
   locale: Locale;
@@ -15,17 +15,20 @@ interface SettingsViewProps {
 }
 
 export function SettingsView({ locale, isInstallable, isInstalled, onInstall, t }: SettingsViewProps) {
-  const router = useRouter();
   const { settings, setNewsCount } = useSettings();
+  const { locale: storedLocale, setLocale } = useLocale(locale);
   
   // Check if iOS Safari (for manual install instructions)
   const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
   const isInBrowser = !isInstalled;
 
   const handleLanguageChange = (newLocale: Locale) => {
-    if (newLocale !== locale) {
-      const path = newLocale === 'en' ? '/' : `/${newLocale}`;
-      router.push(path);
+    if (newLocale !== storedLocale) {
+      setLocale(newLocale);
+      if (typeof window !== 'undefined') {
+        // Reload so the selected language takes effect immediately
+        window.location.reload();
+      }
     }
   };
 
@@ -77,7 +80,7 @@ export function SettingsView({ locale, isInstallable, isInstalled, onInstall, t 
             >
               <span className="text-xl">{localeFlags[loc]}</span>
               <span className="flex-1 text-left font-medium">{localeNames[loc]}</span>
-              {loc === locale && (
+              {loc === storedLocale && (
                 <Check className="w-5 h-5 text-emerald-400" />
               )}
             </button>
