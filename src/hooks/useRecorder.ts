@@ -133,14 +133,16 @@ export function useRecorder({ onDataAvailable, onRecordingComplete }: UseRecorde
     }
   }, []);
 
-  const startRecording = useCallback(async (type: RecordingType, _audioDeviceId?: string, facingMode?: string) => {
+  const startRecording = useCallback(async (type: RecordingType, audioDeviceId?: string, facingMode?: string) => {
     try {
       setError(null);
       chunksRef.current = [];
       setRecordingType(type);
 
-      // Always use default microphone
-      const audioConstraints: MediaTrackConstraints | boolean = true;
+      // Use specified microphone or default
+      const audioConstraints: MediaTrackConstraints | boolean = audioDeviceId 
+        ? { deviceId: { exact: audioDeviceId } } 
+        : true;
       
       // Build video constraints with facingMode
       let videoConstraints: MediaTrackConstraints | boolean = false;

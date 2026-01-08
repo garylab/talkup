@@ -126,14 +126,14 @@ async function summarizeSingleNews(
   const config = LANGUAGE_CONFIG[language] || LANGUAGE_CONFIG.en;
   const contentToUse = content && content.length > 100 ? content : item.snippet;
   
-  const prompt = `You are a news summarizer. Create a concise summary in ${config.name} (around 150 words). Focus on the key facts and main points.
+  const prompt = `Extract the core information from this news article in ${config.name} (around 150 words). Focus on: who, what, when, where, why, and key facts.
 
 Title: ${item.title}
 Source: ${item.source}
 Content:
 ${contentToUse}
 
-Output only the summary text in ${config.name}, nothing else.`;
+Output only the extracted core info in ${config.name}, nothing else.`;
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {

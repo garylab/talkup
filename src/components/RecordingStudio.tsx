@@ -1,13 +1,18 @@
 'use client';
 
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { Mic, Video, Pause, Play, Square, Plus, Undo2, RefreshCcw, SwitchCamera, ChevronRight } from 'lucide-react';
+import { Mic, Video, Pause, Play, Square, Plus, Undo2, RefreshCcw, SwitchCamera, ChevronRight, ChevronDown } from 'lucide-react';
 import { NewsPanel } from './NewsPanel';
 import { cn, formatDuration } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { useSettings } from '@/hooks/useSettings';
 import type { RecordingType } from '@/types';
 import type { RecorderState } from '@/hooks/useRecorder';
+
+interface AudioDevice {
+  deviceId: string;
+  label: string;
+}
 
 interface RecordingStudioProps {
   state: RecorderState;
@@ -57,6 +62,10 @@ export function RecordingStudio({
   const [useFrontCamera, setUseFrontCamera] = useState(true);
   const [cameraCount, setCameraCount] = useState(0);
   const [previewStream, setPreviewStream] = useState<MediaStream | null>(null);
+  const [audioDevices, setAudioDevices] = useState<AudioDevice[]>([]);
+  const [selectedMicId, setSelectedMicId] = useState<string>('');
+  const [showMicDropdown, setShowMicDropdown] = useState(false);
+  const micDropdownRef = useRef<HTMLDivElement>(null);
   
   // Settings from localStorage
   const { settings, setRecordMode } = useSettings();
@@ -69,22 +78,46 @@ export function RecordingStudio({
     }
   }, [mediaStream, recordingType]);
 
-  // Count available cameras
+  // Enumerate available devices (cameras and microphones)
   useEffect(() => {
-    const countCameras = async () => {
+    const enumerateDevices = async () => {
       try {
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices.filter(d => d.kind === 'videoinput');
         setCameraCount(videoDevices.length);
+        
+        const audioInputs = devices.filter(d => d.kind === 'audioinput');
+        const mics = audioInputs.map((d, i) => ({
+          deviceId: d.deviceId,
+          label: d.label || `${t('settings.microphone')} ${i + 1}`,
+        }));
+        setAudioDevices(mics);
+        
+        // Set default mic if not already selected
+        if (!selectedMicId && mics.length > 0) {
+          setSelectedMicId(mics[0].deviceId);
+        }
       } catch {
         setCameraCount(0);
+        setAudioDevices([]);
       }
     };
-    countCameras();
+    enumerateDevices();
     if (mediaStream || previewStream) {
-      countCameras();
+      enumerateDevices();
     }
-  }, [mediaStream, previewStream]);
+  }, [mediaStream, previewStream, t, selectedMicId]);
+
+  // Close mic dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (micDropdownRef.current && !micDropdownRef.current.contains(event.target as Node)) {
+        setShowMicDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Start/stop preview stream when video mode is selected in idle state
   useEffect(() => {
@@ -192,8 +225,10 @@ export function RecordingStudio({
   };
 
   const handleStart = () => {
-    onStart(recordMode, undefined, useFrontCamera ? 'user' : 'environment');
+    onStart(recordMode, selectedMicId || undefined, useFrontCamera ? 'user' : 'environment');
   };
+
+  const selectedMicLabel = audioDevices.find(d => d.deviceId === selectedMicId)?.label || t('settings.selectMicrophone');
 
   // Flip camera (front/back) - only works before recording starts
   const handleFlipCamera = useCallback(() => {
@@ -380,13 +415,54 @@ export function RecordingStudio({
                 </div>
               )}
               
-              {/* Duration */}
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-black/60 backdrop-blur rounded-full">
-                <div className={cn(
-                  'w-2 h-2 rounded-full',
-                  isRecording ? 'bg-red-500 animate-pulse' : 'bg-yellow-500'
-                )} />
-                <span className="font-mono text-xs tabular-nums">{formatDuration(duration)}</span>
+              {/* Duration and Mic selector */}
+              <div className="flex items-center gap-2">
+                {/* Microphone dropdown */}
+                {audioDevices.length > 1 && (
+                  <div className="relative" ref={micDropdownRef}>
+                    <button
+                      onClick={() => setShowMicDropdown(!showMicDropdown)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-black/60 backdrop-blur rounded-xl text-xs font-medium hover:bg-black/70 active:scale-95 transition-all"
+                    >
+                      <Mic className="w-3 h-3 flex-shrink-0" />
+                      <span>{selectedMicLabel}</span>
+                      <ChevronDown className={cn('w-3 h-3 flex-shrink-0 transition-transform', showMicDropdown && 'rotate-180')} />
+                    </button>
+                    
+                    {showMicDropdown && (
+                      <div className="absolute top-full right-0 mt-1 min-w-[280px] max-w-[90vw] bg-zinc-900/95 backdrop-blur rounded-xl shadow-xl border border-white/10 overflow-hidden z-50">
+                        {audioDevices.map((device) => (
+                          <button
+                            key={device.deviceId}
+                            onClick={() => {
+                              setSelectedMicId(device.deviceId);
+                              setShowMicDropdown(false);
+                            }}
+                            className={cn(
+                              'w-full px-4 py-2.5 text-left text-sm flex items-start gap-2 hover:bg-white/10 transition-colors',
+                              selectedMicId === device.deviceId && 'bg-white/10'
+                            )}
+                          >
+                            <Mic className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                            <span className="flex-1">{device.label}</span>
+                            {selectedMicId === device.deviceId && (
+                              <span className="flex-shrink-0 text-green-400">✓</span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Duration */}
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-black/60 backdrop-blur rounded-full">
+                  <div className={cn(
+                    'w-2 h-2 rounded-full',
+                    isRecording ? 'bg-red-500 animate-pulse' : 'bg-yellow-500'
+                  )} />
+                  <span className="font-mono text-xs tabular-nums">{formatDuration(duration)}</span>
+                </div>
               </div>
             </div>
           )}
@@ -418,7 +494,7 @@ export function RecordingStudio({
         </div>
 
         {/* Bottom controls bar - floating over preview, above navbar */}
-        <div className="absolute left-0 right-0 px-4 py-2 z-30" style={{ bottom: 'calc(76px + env(safe-area-inset-bottom, 0px))' }}>
+        <div className="absolute left-0 right-0 px-4 py-2 z-30" style={{ bottom: 'calc(96px + env(safe-area-inset-bottom, 0px))' }}>
           {/* Idle state controls */}
           {isIdle && (
             <div className="flex items-center justify-center">
