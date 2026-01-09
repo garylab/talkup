@@ -86,6 +86,7 @@
     "analyze": "Analyze",
     "analyzing": "Analyzing...",
     "transcribing": "Transcribing...",
+    "extracting": "Extracting audio...",
     "viewAnalysis": "View Analysis",
     "analysisTab": "Analysis",
     "transcriptTab": "Transcript",
@@ -102,6 +103,11 @@
     "noTranscript": "No transcript available",
     "error": "Analysis failed",
     "strengths": "Strengths",
-    "improvements": "Areas to Improve"
+    "improvements": "Areas to Improve",
+    "whisperResults": "Transcription Results",
+    "detectedLanguage": "Detected Language",
+    "duration": "Duration",
+    "fullText": "Full Transcript",
+    "timestampedSegments": "Timestamped Segments"
   }
 }

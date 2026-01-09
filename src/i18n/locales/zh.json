@@ -86,6 +86,7 @@
     "analyze": "分析",
     "analyzing": "分析中...",
     "transcribing": "转录中...",
+    "extracting": "提取音频中...",
     "viewAnalysis": "查看分析",
     "analysisTab": "分析",
     "transcriptTab": "文字稿",
@@ -102,6 +103,11 @@
     "noTranscript": "暂无文字稿",
     "error": "分析失败",
     "strengths": "优点",
-    "improvements": "待改进"
+    "improvements": "待改进",
+    "whisperResults": "转录结果",
+    "detectedLanguage": "检测到的语言",
+    "duration": "时长",
+    "fullText": "完整文字稿",
+    "timestampedSegments": "带时间戳的段落"
   }
 }

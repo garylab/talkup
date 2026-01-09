@@ -56,6 +56,6 @@ export interface RecordingAnalysis {
   transcript: Transcript;
   analysis: SpeechAnalysis;
   createdAt: string;
-  status: 'pending' | 'transcribing' | 'analyzing' | 'complete' | 'error';
+  status: 'pending' | 'extracting' | 'transcribing' | 'analyzing' | 'complete' | 'error';
   error?: string;
 }

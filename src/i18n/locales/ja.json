@@ -86,6 +86,7 @@
     "analyze": "分析",
     "analyzing": "分析中...",
     "transcribing": "文字起こし中...",
+    "extracting": "音声抽出中...",
     "viewAnalysis": "分析を見る",
     "analysisTab": "分析",
     "transcriptTab": "文字起こし",
@@ -102,6 +103,11 @@
     "noTranscript": "文字起こしがありません",
     "error": "分析に失敗しました",
     "strengths": "長所",
-    "improvements": "改善点"
+    "improvements": "改善点",
+    "whisperResults": "文字起こし結果",
+    "detectedLanguage": "検出された言語",
+    "duration": "長さ",
+    "fullText": "全文",
+    "timestampedSegments": "タイムスタンプ付きセグメント"
   }
 }

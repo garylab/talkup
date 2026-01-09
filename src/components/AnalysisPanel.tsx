@@ -108,14 +108,42 @@ function CategoryCard({
   );
 }
 
+// Language name mapping for Whisper detected languages
+const languageNames: Record<string, string> = {
+  en: 'English',
+  zh: '中文',
+  es: 'Español',
+  fr: 'Français',
+  de: 'Deutsch',
+  ja: '日本語',
+  pt: 'Português',
+  ko: '한국어',
+  ru: 'Русский',
+  ar: 'العربية',
+  it: 'Italiano',
+  nl: 'Nederlands',
+  pl: 'Polski',
+  tr: 'Türkçe',
+  vi: 'Tiếng Việt',
+  th: 'ไทย',
+  id: 'Bahasa Indonesia',
+  hi: 'हिन्दी',
+};
+
 function TranscriptView({ 
   paragraphs,
+  language,
+  duration,
+  fullText,
   t 
 }: { 
   paragraphs: TranscriptParagraph[];
+  language: string;
+  duration: number;
+  fullText: string;
   t: (key: string) => string;
 }) {
-  if (paragraphs.length === 0) {
+  if (paragraphs.length === 0 && !fullText) {
     return (
       <div className="flex items-center justify-center py-12 text-zinc-500">
         <p>{t('analysis.noTranscript')}</p>
@@ -123,22 +151,61 @@ function TranscriptView({
     );
   }
 
+  const displayLanguage = languageNames[language] || language.toUpperCase();
+
   return (
     <div className="space-y-4">
-      {paragraphs.map((paragraph) => (
-        <div key={paragraph.id} className="surface p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs font-mono text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded">
-              {formatDuration(Math.floor(paragraph.startTime))}
-            </span>
-            <span className="text-zinc-700">→</span>
-            <span className="text-xs font-mono text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded">
-              {formatDuration(Math.floor(paragraph.endTime))}
-            </span>
+      {/* Whisper Results Header */}
+      <div className="surface p-4">
+        <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">
+          {t('analysis.whisperResults')}
+        </h4>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-xs text-zinc-500 mb-1">{t('analysis.detectedLanguage')}</p>
+            <p className="text-sm font-medium text-white">{displayLanguage}</p>
           </div>
-          <p className="text-sm text-zinc-300 leading-relaxed">{paragraph.text}</p>
+          <div>
+            <p className="text-xs text-zinc-500 mb-1">{t('analysis.duration')}</p>
+            <p className="text-sm font-medium text-white">{formatDuration(Math.floor(duration))}</p>
+          </div>
         </div>
-      ))}
+      </div>
+
+      {/* Full Text */}
+      {fullText && (
+        <div className="surface p-4">
+          <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">
+            {t('analysis.fullText')}
+          </h4>
+          <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{fullText}</p>
+        </div>
+      )}
+
+      {/* Paragraphs with timestamps */}
+      {paragraphs.length > 0 && (
+        <div>
+          <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">
+            {t('analysis.timestampedSegments')}
+          </h4>
+          <div className="space-y-3">
+            {paragraphs.map((paragraph) => (
+              <div key={paragraph.id} className="surface p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-mono text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded">
+                    {formatDuration(Math.floor(paragraph.startTime))}
+                  </span>
+                  <span className="text-zinc-700">→</span>
+                  <span className="text-xs font-mono text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded">
+                    {formatDuration(Math.floor(paragraph.endTime))}
+                  </span>
+                </div>
+                <p className="text-sm text-zinc-300 leading-relaxed">{paragraph.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -282,7 +349,13 @@ export function AnalysisPanel({ analysis, onClose, t }: AnalysisPanelProps) {
           </div>
         ) : (
           <div className="p-4 pb-32">
-            <TranscriptView paragraphs={transcript.paragraphs} t={t} />
+            <TranscriptView 
+              paragraphs={transcript.paragraphs} 
+              language={transcript.language}
+              duration={transcript.duration}
+              fullText={transcript.fullText}
+              t={t} 
+            />
           </div>
         )}
       </div>

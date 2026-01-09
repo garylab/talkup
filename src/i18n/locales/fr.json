@@ -86,6 +86,7 @@
     "analyze": "Analyser",
     "analyzing": "Analyse en cours...",
     "transcribing": "Transcription...",
+    "extracting": "Extraction audio...",
     "viewAnalysis": "Voir l'Analyse",
     "analysisTab": "Analyse",
     "transcriptTab": "Transcription",
@@ -102,6 +103,11 @@
     "noTranscript": "Aucune transcription disponible",
     "error": "Échec de l'analyse",
     "strengths": "Points Forts",
-    "improvements": "Axes d'Amélioration"
+    "improvements": "Axes d'Amélioration",
+    "whisperResults": "Résultats de Transcription",
+    "detectedLanguage": "Langue Détectée",
+    "duration": "Durée",
+    "fullText": "Transcription Complète",
+    "timestampedSegments": "Segments Horodatés"
   }
 }

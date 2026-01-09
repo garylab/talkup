@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 import { getBlob } from '@/lib/storage';
 import { api } from '@/lib/api';
-import type { RecordingAnalysis, Transcript, SpeechAnalysis } from '@/types';
+import { extractAudioFromVideo, isVideoBlob, formatFileSize } from '@/lib/utils';
+import type { RecordingAnalysis } from '@/types';
 
 export function useAnalysis() {
   const [analyses, setAnalyses, isHydrated] = useLocalStorage<Record<string, RecordingAnalysis>>('talkup-analyses', {});
@@ -62,17 +63,39 @@ export function useAnalysis() {
     onProgress?.('pending');
 
     try {
+      // Get the media blob
+      const blob = await getBlob(recordingId);
+      if (!blob) {
+        throw new Error('Recording not found');
+      }
+
+      let mediaBlob = blob;
+      
+      // If it's a video, extract audio first to reduce upload size
+      if (isVideoBlob(blob)) {
+        console.log(`[Analysis] Video detected: ${formatFileSize(blob.size)}`);
+        
+        // Update status to extracting
+        const extractingAnalysis = { ...initialAnalysis, status: 'extracting' as const };
+        setAnalyses(prev => ({ ...prev, [recordingId]: extractingAnalysis }));
+        setCurrentAnalysis(extractingAnalysis);
+        onProgress?.('extracting');
+        
+        try {
+          mediaBlob = await extractAudioFromVideo(blob);
+          console.log(`[Analysis] Audio extracted: ${formatFileSize(mediaBlob.size)} (${Math.round((1 - mediaBlob.size / blob.size) * 100)}% smaller)`);
+        } catch (extractError) {
+          console.warn('[Analysis] Audio extraction failed, using original video:', extractError);
+          // Fall back to original video if extraction fails
+          mediaBlob = blob;
+        }
+      }
+
       // Update status to transcribing
       const transcribingAnalysis = { ...initialAnalysis, status: 'transcribing' as const };
       setAnalyses(prev => ({ ...prev, [recordingId]: transcribingAnalysis }));
       setCurrentAnalysis(transcribingAnalysis);
       onProgress?.('transcribing');
-
-      // Get the audio blob
-      const blob = await getBlob(recordingId);
-      if (!blob) {
-        throw new Error('Recording not found');
-      }
 
       // Update status to analyzing
       const analyzingAnalysis = { ...transcribingAnalysis, status: 'analyzing' as const };
@@ -81,7 +104,7 @@ export function useAnalysis() {
       onProgress?.('analyzing');
 
       // Call API to transcribe and analyze
-      const result = await api.transcribeAndAnalyze(blob, topic, language);
+      const result = await api.transcribeAndAnalyze(mediaBlob, topic, language);
 
       // Create complete analysis
       const completeAnalysis: RecordingAnalysis = {

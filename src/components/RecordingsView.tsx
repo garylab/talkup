@@ -358,6 +358,7 @@ export function RecordingsView({ recordings, onRemove, onClearAll, t, locale }: 
                     <div className="mt-3 flex items-center justify-center gap-2 text-sm text-zinc-400">
                       <Loader2 className="w-4 h-4 animate-spin" />
                       <span>
+                        {analysisStatus === 'extracting' && t('analysis.extracting')}
                         {analysisStatus === 'transcribing' && t('analysis.transcribing')}
                         {analysisStatus === 'analyzing' && t('analysis.analyzing')}
                         {analysisStatus === 'pending' && t('analysis.analyzing')}

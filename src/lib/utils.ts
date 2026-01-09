@@ -1,108 +1,181 @@
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 
-/**
- * Merge class names with Tailwind CSS classes
- */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 /**
- * Format duration in seconds to MM:SS format
+ * Generate a UUID v7 (time-ordered)
+ */
+export function uuid7(): string {
+  const timestamp = Date.now();
+  const timestampHex = timestamp.toString(16).padStart(12, '0');
+  
+  const randomBytes = new Uint8Array(10);
+  crypto.getRandomValues(randomBytes);
+  
+  // Set version (7) and variant bits
+  randomBytes[0] = (randomBytes[0] & 0x0f) | 0x70; // version 7
+  randomBytes[2] = (randomBytes[2] & 0x3f) | 0x80; // variant 10
+  
+  const randomHex = Array.from(randomBytes)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+  
+  return `${timestampHex.slice(0, 8)}-${timestampHex.slice(8, 12)}-${randomHex.slice(0, 4)}-${randomHex.slice(4, 8)}-${randomHex.slice(8, 20)}`;
+}
+
+/**
+ * Format duration in seconds to MM:SS or HH:MM:SS
  */
 export function formatDuration(seconds: number): string {
-  const mins = Math.floor(seconds / 60);
+  if (!seconds || seconds < 0) return '0:00';
+  
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
   const secs = Math.floor(seconds % 60);
+  
+  if (hrs > 0) {
+    return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
 /**
- * Format file size in bytes to human-readable format
- */
-export function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 Bytes';
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-
-/**
- * Generate a UUID v7 (time-ordered UUID)
- * Format: xxxxxxxx-xxxx-7xxx-yxxx-xxxxxxxxxxxx
- * - 48 bits: Unix timestamp in milliseconds
- * - 4 bits: version (7)
- * - 12 bits: random
- * - 2 bits: variant (10)
- * - 62 bits: random
- */
-export function uuid7(): string {
-  const timestamp = Date.now();
-  
-  // Get random bytes
-  const randomBytes = new Uint8Array(10);
-  crypto.getRandomValues(randomBytes);
-  
-  // Build the UUID
-  // Bytes 0-5: timestamp (48 bits)
-  const timestampHex = timestamp.toString(16).padStart(12, '0');
-  
-  // Bytes 6-7: version (7) + random (12 bits)
-  const byte6 = 0x70 | (randomBytes[0] & 0x0f); // version 7 + 4 random bits
-  const byte7 = randomBytes[1];
-  
-  // Bytes 8-9: variant (10) + random (14 bits)  
-  const byte8 = 0x80 | (randomBytes[2] & 0x3f); // variant 10 + 6 random bits
-  const byte9 = randomBytes[3];
-  
-  // Bytes 10-15: random (48 bits)
-  const randomHex = Array.from(randomBytes.slice(4))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-  
-  return [
-    timestampHex.slice(0, 8),
-    timestampHex.slice(8, 12),
-    byte6.toString(16).padStart(2, '0') + byte7.toString(16).padStart(2, '0'),
-    byte8.toString(16).padStart(2, '0') + byte9.toString(16).padStart(2, '0'),
-    randomHex,
-  ].join('-');
-}
-
-/**
- * Format relative time (e.g., "2 hours ago")
- */
-export function formatRelativeTime(date: Date | string): string {
-  const now = new Date();
-  const then = new Date(date);
-  const seconds = Math.floor((now.getTime() - then.getTime()) / 1000);
-
-  if (seconds < 60) return 'Just now';
-  if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
-  if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
-  
-  return then.toLocaleDateString();
-}
-
-/**
- * Format date to YYYY-MM-DD HH:mm
+ * Format a date for display
  */
 export function formatDate(date: Date | string): string {
-  const d = new Date(date);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  const hours = String(d.getHours()).padStart(2, '0');
-  const minutes = String(d.getMinutes()).padStart(2, '0');
-  return `${year}-${month}-${day} ${hours}:${minutes}`;
+  const d = typeof date === 'string' ? new Date(date) : date;
+  
+  const now = new Date();
+  const diff = now.getTime() - d.getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  
+  if (days === 0) {
+    return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  } else if (days === 1) {
+    return 'Yesterday';
+  } else if (days < 7) {
+    return d.toLocaleDateString(undefined, { weekday: 'short' });
+  } else {
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
 }
 
 /**
- * Truncate text to a maximum length
+ * Extract audio from a video blob
+ * Uses captureStream and accelerated playback for fast extraction
  */
-export function truncate(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text;
-  return text.slice(0, maxLength - 3) + '...';
+export async function extractAudioFromVideo(
+  videoBlob: Blob,
+  onProgress?: (progress: number) => void
+): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    video.muted = true; // Mute to avoid audio playback during extraction
+    video.playsInline = true;
+    
+    const url = URL.createObjectURL(videoBlob);
+    video.src = url;
+    
+    video.onloadedmetadata = () => {
+      const duration = video.duration;
+      console.log(`[AudioExtract] Video duration: ${duration}s`);
+      
+      // Capture the media stream from video
+      const stream = (video as any).captureStream?.() || (video as any).mozCaptureStream?.();
+      if (!stream) {
+        URL.revokeObjectURL(url);
+        reject(new Error('captureStream not supported'));
+        return;
+      }
+      
+      // Get only audio tracks
+      const audioTracks = stream.getAudioTracks();
+      if (audioTracks.length === 0) {
+        URL.revokeObjectURL(url);
+        reject(new Error('No audio track found in video'));
+        return;
+      }
+      
+      // Create audio-only stream
+      const audioStream = new MediaStream(audioTracks);
+      
+      // Use MediaRecorder to capture audio
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+        ? 'audio/webm;codecs=opus' 
+        : 'audio/webm';
+      
+      const recorder = new MediaRecorder(audioStream, {
+        mimeType,
+        audioBitsPerSecond: 128000, // 128kbps for good quality, smaller size
+      });
+      
+      const chunks: Blob[] = [];
+      
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunks.push(e.data);
+        }
+      };
+      
+      recorder.onstop = () => {
+        URL.revokeObjectURL(url);
+        const audioBlob = new Blob(chunks, { type: mimeType });
+        console.log(`[AudioExtract] Extracted audio: ${(audioBlob.size / 1024 / 1024).toFixed(2)}MB`);
+        resolve(audioBlob);
+      };
+      
+      recorder.onerror = (e) => {
+        URL.revokeObjectURL(url);
+        reject(e);
+      };
+      
+      video.onended = () => {
+        recorder.stop();
+        video.remove();
+      };
+      
+      video.ontimeupdate = () => {
+        if (onProgress && duration > 0) {
+          onProgress(Math.min(video.currentTime / duration, 1));
+        }
+      };
+      
+      video.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('Failed to load video'));
+      };
+      
+      // Start recording and play video at high speed
+      recorder.start();
+      video.playbackRate = 16; // 16x speed for fast extraction
+      video.play().catch(err => {
+        URL.revokeObjectURL(url);
+        reject(err);
+      });
+    };
+    
+    video.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Failed to load video'));
+    };
+  });
+}
+
+/**
+ * Check if blob is a video
+ */
+export function isVideoBlob(blob: Blob): boolean {
+  return blob.type.startsWith('video/');
+}
+
+/**
+ * Format file size for display
+ */
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
