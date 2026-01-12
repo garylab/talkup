@@ -108,6 +108,7 @@
     "detectedLanguage": "Detected Language",
     "duration": "Duration",
     "fullText": "Full Transcript",
-    "timestampedSegments": "Timestamped Segments"
+    "timestampedSegments": "Timestamped Segments",
+    "reanalyze": "Re-analyze"
   }
 }

@@ -65,39 +65,62 @@ export function formatDate(date: Date | string): string {
 
 /**
  * Extract audio from a video blob
- * Uses captureStream and accelerated playback for fast extraction
+ * Uses captureStream with moderate playback speed for reliable extraction
  */
 export async function extractAudioFromVideo(
   videoBlob: Blob,
   onProgress?: (progress: number) => void
 ): Promise<Blob> {
   return new Promise((resolve, reject) => {
+    console.log(`[AudioExtract] Starting extraction from ${formatFileSize(videoBlob.size)} video`);
+    
     const video = document.createElement('video');
-    video.muted = true; // Mute to avoid audio playback during extraction
+    video.muted = false; // Need audio to be enabled for captureStream
+    video.volume = 0; // But set volume to 0 to avoid playback sound
     video.playsInline = true;
     
     const url = URL.createObjectURL(videoBlob);
     video.src = url;
     
+    let recorder: MediaRecorder | null = null;
+    let timeoutId: NodeJS.Timeout | null = null;
+    
+    const cleanup = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      URL.revokeObjectURL(url);
+      video.remove();
+    };
+    
     video.onloadedmetadata = () => {
       const duration = video.duration;
       console.log(`[AudioExtract] Video duration: ${duration}s`);
       
+      // Set a timeout in case something hangs (duration * 1000ms / playbackRate + 30s buffer)
+      const playbackRate = 4; // Use 4x speed - more reliable than 16x
+      const expectedTime = (duration * 1000 / playbackRate) + 30000;
+      timeoutId = setTimeout(() => {
+        console.error('[AudioExtract] Timeout - extraction took too long');
+        cleanup();
+        reject(new Error('Audio extraction timed out'));
+      }, expectedTime);
+      
       // Capture the media stream from video
       const stream = (video as any).captureStream?.() || (video as any).mozCaptureStream?.();
       if (!stream) {
-        URL.revokeObjectURL(url);
-        reject(new Error('captureStream not supported'));
+        cleanup();
+        reject(new Error('captureStream not supported in this browser'));
         return;
       }
       
       // Get only audio tracks
       const audioTracks = stream.getAudioTracks();
       if (audioTracks.length === 0) {
-        URL.revokeObjectURL(url);
+        cleanup();
         reject(new Error('No audio track found in video'));
         return;
       }
+      
+      console.log(`[AudioExtract] Found ${audioTracks.length} audio track(s)`);
       
       // Create audio-only stream
       const audioStream = new MediaStream(audioTracks);
@@ -105,11 +128,15 @@ export async function extractAudioFromVideo(
       // Use MediaRecorder to capture audio
       const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
         ? 'audio/webm;codecs=opus' 
-        : 'audio/webm';
+        : MediaRecorder.isTypeSupported('audio/webm')
+          ? 'audio/webm'
+          : 'audio/mp4';
       
-      const recorder = new MediaRecorder(audioStream, {
+      console.log(`[AudioExtract] Using MIME type: ${mimeType}`);
+      
+      recorder = new MediaRecorder(audioStream, {
         mimeType,
-        audioBitsPerSecond: 128000, // 128kbps for good quality, smaller size
+        audioBitsPerSecond: 64000, // 64kbps - good enough for speech, smaller file
       });
       
       const chunks: Blob[] = [];
@@ -121,20 +148,23 @@ export async function extractAudioFromVideo(
       };
       
       recorder.onstop = () => {
-        URL.revokeObjectURL(url);
+        cleanup();
         const audioBlob = new Blob(chunks, { type: mimeType });
-        console.log(`[AudioExtract] Extracted audio: ${(audioBlob.size / 1024 / 1024).toFixed(2)}MB`);
+        console.log(`[AudioExtract] Extraction complete: ${formatFileSize(audioBlob.size)}`);
         resolve(audioBlob);
       };
       
       recorder.onerror = (e) => {
-        URL.revokeObjectURL(url);
-        reject(e);
+        console.error('[AudioExtract] Recorder error:', e);
+        cleanup();
+        reject(new Error('MediaRecorder error during extraction'));
       };
       
       video.onended = () => {
-        recorder.stop();
-        video.remove();
+        console.log('[AudioExtract] Video playback ended, stopping recorder');
+        if (recorder && recorder.state === 'recording') {
+          recorder.stop();
+        }
       };
       
       video.ontimeupdate = () => {
@@ -144,21 +174,22 @@ export async function extractAudioFromVideo(
       };
       
       video.onerror = () => {
-        URL.revokeObjectURL(url);
+        cleanup();
         reject(new Error('Failed to load video'));
       };
       
-      // Start recording and play video at high speed
-      recorder.start();
-      video.playbackRate = 16; // 16x speed for fast extraction
+      // Start recording and play video at moderate speed
+      recorder.start(1000); // Request data every 1 second
+      video.playbackRate = playbackRate;
       video.play().catch(err => {
-        URL.revokeObjectURL(url);
+        console.error('[AudioExtract] Play failed:', err);
+        cleanup();
         reject(err);
       });
     };
     
     video.onerror = () => {
-      URL.revokeObjectURL(url);
+      cleanup();
       reject(new Error('Failed to load video'));
     };
   });

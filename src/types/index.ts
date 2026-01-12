@@ -30,25 +30,17 @@ export interface Transcript {
 }
 
 // Analysis types
-export interface AnalysisCategory {
-  score: number; // 1-10
-  feedback: string;
-  strengths: string[];
-  improvements: string[];
-}
-
 export interface SpeechAnalysis {
-  deliveryAndLanguage: AnalysisCategory;
-  structureAndLogic: AnalysisCategory;
-  contentQuality: AnalysisCategory;
-  engagementAndPresence: AnalysisCategory;
-  overallPerformance: AnalysisCategory;
+  score: number;              // Overall score 1-10
+  strengths: string[];        // Max 3 good points
+  improvements: string[];     // 3-7 crucial improvements
+  summary: string;            // Brief summary
   wordsPerMinute: number;
-  pauseRatio: number; // percentage of time spent in pauses
+  pauseRatio: number;         // percentage of time spent in pauses
   totalWords: number;
   totalPauses: number;
   averagePauseDuration: number;
-  summary: string;
+  durationSeconds: number;
 }
 
 export interface RecordingAnalysis {

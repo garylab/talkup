@@ -37,8 +37,9 @@ export function RecordingsView({ recordings, onRemove, onClearAll, t, locale }: 
   const [analysisStatus, setAnalysisStatus] = useState<RecordingAnalysis['status'] | null>(null);
   const [showAnalysisPanel, setShowAnalysisPanel] = useState(false);
   const [selectedAnalysis, setSelectedAnalysis] = useState<RecordingAnalysis | null>(null);
+  const [reanalyzingId, setReanalyzingId] = useState<string | null>(null);
   
-  const { analyzeRecording, getAnalysis, hasAnalysis } = useAnalysis();
+  const { analyzeRecording, getAnalysis, hasAnalysis, deleteAnalysis } = useAnalysis();
 
   // Cleanup blob URLs on unmount
   useEffect(() => {
@@ -148,6 +149,38 @@ export function RecordingsView({ recordings, onRemove, onClearAll, t, locale }: 
       setAnalysisStatus(null);
     }
   }, [analyzeRecording, getAnalysis, hasAnalysis, locale]);
+
+  // Re-analyze recording from the analysis panel
+  const handleReanalyze = useCallback(async () => {
+    if (!selectedAnalysis) return;
+    
+    const recording = recordings.find(r => r.id === selectedAnalysis.id);
+    if (!recording) return;
+    
+    // Delete existing analysis
+    deleteAnalysis(recording.id);
+    
+    // Start new analysis
+    setReanalyzingId(recording.id);
+    setAnalysisStatus('pending');
+    
+    try {
+      const result = await analyzeRecording(
+        recording.id,
+        recording.topic,
+        locale,
+        (status) => setAnalysisStatus(status)
+      );
+      setSelectedAnalysis(result);
+    } catch (error) {
+      console.error('Re-analysis failed:', error);
+      setShowAnalysisPanel(false);
+      setSelectedAnalysis(null);
+    } finally {
+      setReanalyzingId(null);
+      setAnalysisStatus(null);
+    }
+  }, [selectedAnalysis, recordings, analyzeRecording, deleteAnalysis, locale]);
 
   // Share recording
   const handleShare = useCallback(async (id: string, title: string, e?: React.MouseEvent) => {
@@ -424,6 +457,8 @@ export function RecordingsView({ recordings, onRemove, onClearAll, t, locale }: 
             setShowAnalysisPanel(false);
             setSelectedAnalysis(null);
           }}
+          onReanalyze={handleReanalyze}
+          isReanalyzing={reanalyzingId === selectedAnalysis.id}
           t={t}
         />
       )}

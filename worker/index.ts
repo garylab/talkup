@@ -3,6 +3,8 @@ interface Env {
   TALKUP_CACHE: KVNamespace;
   SERPER_API_KEY: string;
   OPENAI_API_KEY: string;
+  RUNPOD_API_URL: string;
+  RUNPOD_API_KEY: string;
 }
 
 // Transcript types
@@ -18,6 +20,46 @@ interface WhisperResponse {
   segments: WhisperSegment[];
   language: string;
   duration: number;
+}
+
+// RunPod API response types
+interface RunPodSegment {
+  id: number;
+  start: number;
+  end: number;
+  text: string;
+  seek?: number;
+  temperature?: number;
+  avg_logprob?: number;
+  compression_ratio?: number;
+  no_speech_prob?: number;
+  tokens?: number[];
+}
+
+interface RunPodWordTimestamp {
+  word: string;
+  start: number;
+  end: number;
+}
+
+interface RunPodOutput {
+  detected_language: string;
+  device?: string;
+  model?: string;
+  segments: RunPodSegment[];
+  transcription: string;
+  translation?: string | null;
+  word_timestamps?: RunPodWordTimestamp[];
+}
+
+interface RunPodResponse {
+  id: string;
+  status: string;
+  delayTime?: number;
+  executionTime?: number;
+  workerId?: string;
+  output?: RunPodOutput;
+  error?: string;
 }
 
 interface TranscriptSegment {
@@ -43,25 +85,17 @@ interface Transcript {
   language: string;
 }
 
-interface AnalysisCategory {
-  score: number;
-  feedback: string;
-  strengths: string[];
-  improvements: string[];
-}
-
 interface SpeechAnalysis {
-  deliveryAndLanguage: AnalysisCategory;
-  structureAndLogic: AnalysisCategory;
-  contentQuality: AnalysisCategory;
-  engagementAndPresence: AnalysisCategory;
-  overallPerformance: AnalysisCategory;
+  score: number;              // Overall score 1-10
+  strengths: string[];        // Max 3 good points
+  improvements: string[];     // 3-7 crucial improvements
+  summary: string;            // Brief summary
   wordsPerMinute: number;
   pauseRatio: number;
   totalWords: number;
   totalPauses: number;
   averagePauseDuration: number;
-  summary: string;
+  durationSeconds: number;
 }
 
 interface SerperNewsResult {
@@ -290,70 +324,153 @@ function groupIntoParagraphs(segments: TranscriptSegment[], pauseThreshold: numb
 }
 
 // Calculate speech metrics
-function calculateMetrics(segments: TranscriptSegment[], totalDuration: number): {
+function calculateMetrics(segments: TranscriptSegment[], totalDuration: number, fullText: string): {
   wordsPerMinute: number;
   pauseRatio: number;
   totalWords: number;
   totalPauses: number;
   averagePauseDuration: number;
+  durationSeconds: number;
 } {
-  const fullText = segments.map(s => s.text).join(' ');
-  const totalWords = fullText.split(/\s+/).filter(w => w.length > 0).length;
+  // Count words properly - handle CJK characters (Chinese, Japanese, Korean)
+  // CJK languages don't use spaces between words
+  const cjkPattern = /[\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]/g;
+  const cjkChars = fullText.match(cjkPattern) || [];
+  const nonCjkText = fullText.replace(cjkPattern, ' ');
+  const nonCjkWords = nonCjkText.split(/\s+/).filter(w => w.length > 0);
   
-  // Calculate total speaking time
+  // For CJK, each character roughly equals a word; for other languages, count words
+  const totalWords = cjkChars.length + nonCjkWords.length;
+  
+  // Calculate actual speaking time from segments
   let totalSpeakingTime = 0;
   let totalPauseTime = 0;
   let pauseCount = 0;
   
   for (let i = 0; i < segments.length; i++) {
-    totalSpeakingTime += segments[i].end - segments[i].start;
+    const segmentDuration = segments[i].end - segments[i].start;
+    totalSpeakingTime += segmentDuration;
     
     if (i > 0) {
       const pause = segments[i].start - segments[i - 1].end;
-      if (pause > 0.3) { // Count pauses longer than 300ms
+      if (pause > 0.5) { // Count pauses longer than 500ms
         totalPauseTime += pause;
         pauseCount++;
       }
     }
   }
   
+  // WPM based on actual speaking time (not total duration)
   const speakingMinutes = totalSpeakingTime / 60;
   const wordsPerMinute = speakingMinutes > 0 ? Math.round(totalWords / speakingMinutes) : 0;
+  
+  // Pause ratio: percentage of total time that is pauses
   const pauseRatio = totalDuration > 0 ? Math.round((totalPauseTime / totalDuration) * 100) : 0;
   const averagePauseDuration = pauseCount > 0 ? totalPauseTime / pauseCount : 0;
+  
+  console.log(`[Metrics] Words: ${totalWords} (CJK: ${cjkChars.length}, Other: ${nonCjkWords.length})`);
+  console.log(`[Metrics] Speaking time: ${totalSpeakingTime.toFixed(1)}s, Total: ${totalDuration.toFixed(1)}s`);
+  console.log(`[Metrics] WPM: ${wordsPerMinute}, Pauses: ${pauseCount}, Pause ratio: ${pauseRatio}%`);
   
   return {
     wordsPerMinute,
     pauseRatio,
     totalWords,
     totalPauses: pauseCount,
-    averagePauseDuration: Math.round(averagePauseDuration * 100) / 100,
+    averagePauseDuration: Math.round(averagePauseDuration * 10) / 10,
+    durationSeconds: Math.round(totalDuration),
   };
 }
 
-// Transcribe audio/video using OpenAI Whisper
-// Whisper supports: flac, mp3, mp4, mpeg, mpga, m4a, ogg, wav, webm
-async function transcribeMedia(mediaBlob: Blob, filename: string, apiKey: string): Promise<WhisperResponse> {
-  const formData = new FormData();
-  formData.append('file', mediaBlob, filename);
-  formData.append('model', 'whisper-1');
-  formData.append('response_format', 'verbose_json');
-  formData.append('timestamp_granularities[]', 'segment');
+// Convert Blob to base64
+async function blobToBase64(blob: Blob): Promise<string> {
+  const arrayBuffer = await blob.arrayBuffer();
+  const uint8Array = new Uint8Array(arrayBuffer);
+  let binary = '';
+  const chunkSize = 8192;
+  for (let i = 0; i < uint8Array.length; i += chunkSize) {
+    const chunk = uint8Array.slice(i, i + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+  return btoa(binary);
+}
+
+// Transcribe audio/video using RunPod Whisper API
+// No file size limit - uses base64 encoding
+async function transcribeMedia(mediaBlob: Blob, filename: string, apiUrl: string, apiKey: string): Promise<WhisperResponse> {
+  console.log(`[RunPod] Converting ${(mediaBlob.size / 1024 / 1024).toFixed(2)}MB to base64...`);
   
-  const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+  const base64Audio = await blobToBase64(mediaBlob);
+  console.log(`[RunPod] Base64 size: ${(base64Audio.length / 1024 / 1024).toFixed(2)}MB`);
+  
+  const payload = {
+    input: {
+      model: 'large-v3',           // Best accuracy (turbo for speed)
+      word_timestamps: true,        // Get individual word timings
+      enable_vad: true,             // Voice Activity Detection - filters silence
+      condition_on_previous_text: false,
+      audio_base64: base64Audio,
+    },
+  };
+  
+  console.log(`[RunPod] Sending to RunPod API: ${apiUrl}`);
+  
+  const response = await fetch(apiUrl, {
     method: 'POST',
     headers: {
+      'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
     },
-    body: formData,
+    body: JSON.stringify(payload),
   });
   
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`Whisper API error: ${response.status} - ${error}`);
+    throw new Error(`RunPod API error: ${response.status} - ${error}`);
   }
   
-  return response.json() as Promise<WhisperResponse>;
+  const result = await response.json() as RunPodResponse;
+  console.log(`[RunPod] Response status: ${result.status}, executionTime: ${result.executionTime}ms`);
+  
+  if (result.status === 'FAILED' || result.error) {
+    throw new Error(`RunPod transcription failed: ${result.error || 'Unknown error'}`);
+  }
+  
+  if (result.status !== 'COMPLETED') {
+    throw new Error(`RunPod job not completed: ${result.status}`);
+  }
+  
+  const output = result.output;
+  if (!output) {
+    throw new Error('No output from RunPod');
+  }
+  
+  const text = output.transcription || '';
+  const segments = output.segments || [];
+  const detectedLanguage = output.detected_language || 'en';
+  
+  // Calculate duration from segments
+  let duration = 0;
+  if (segments.length > 0) {
+    duration = segments[segments.length - 1].end || 0;
+  }
+  
+  console.log(`[RunPod] Transcription complete: ${segments.length} segments, ${duration.toFixed(1)}s duration`);
+  console.log(`[RunPod] Detected language: ${detectedLanguage}`);
+  console.log(`[RunPod] Text: ${text.substring(0, 200)}...`);
+  
+  // Convert to WhisperResponse format
+  return {
+    text,
+    segments: segments.map((s, i) => ({
+      id: s.id ?? i,
+      start: s.start,
+      end: s.end,
+      text: s.text,
+    })),
+    language: detectedLanguage,
+    duration,
+  };
 }
 
 // Analyze speech quality using ChatGPT
@@ -362,78 +479,51 @@ async function analyzeSpeech(
   topic: string | null,
   language: string,
   apiKey: string
-): Promise<SpeechAnalysis> {
+): Promise<{ score: number; strengths: string[]; improvements: string[]; summary: string }> {
   const config = LANGUAGE_CONFIG[language] || LANGUAGE_CONFIG.en;
   
-  const prompt = `You are an expert speech coach. Analyze the following speech transcript and provide specific, actionable feedback based on the ACTUAL CONTENT of the speech.
+  const prompt = `You are an expert speech coach. Analyze this speech and provide focused, actionable feedback.
 
 Topic: ${topic || 'Not specified'}
 Duration: ${Math.round(transcript.duration)} seconds
-Words: ${transcript.fullText.split(/\s+/).length}
 
 Transcript:
 ${transcript.fullText}
 
-OUTPUT LANGUAGE: All feedback, strengths, improvements, and summary MUST be written in ${config.name}. Do NOT use English unless the output language is English.
+OUTPUT LANGUAGE: ${config.name} (All output MUST be in this language)
 
-Provide analysis in the following JSON format (respond ONLY with valid JSON, no markdown):
+Respond with ONLY valid JSON (no markdown):
 {
-  "deliveryAndLanguage": {
-    "score": <1-10>,
-    "feedback": "<detailed feedback>",
-    "strengths": ["<quote specific good phrases/words from transcript and explain why they work well>", "<strength 2>"],
-    "improvements": ["<quote specific words/phrases from transcript> → <suggest specific replacements in same language>", "<improvement 2>"]
-  },
-  "structureAndLogic": {
-    "score": <1-10>,
-    "feedback": "<detailed feedback>",
-    "strengths": ["<specific strength from transcript>", "<strength 2>"],
-    "improvements": ["<quote from transcript> → <better alternative phrasing/structure>", "<improvement 2>"]
-  },
-  "contentQuality": {
-    "score": <1-10>,
-    "feedback": "<detailed feedback>",
-    "strengths": ["<specific strength from transcript>", "<strength 2>"],
-    "improvements": ["<specific content issue from transcript> → <how to enhance with examples>", "<improvement 2>"]
-  },
-  "engagementAndPresence": {
-    "score": <1-10>,
-    "feedback": "<detailed feedback>",
-    "strengths": ["<specific strength from transcript>", "<strength 2>"],
-    "improvements": ["<specific issue from transcript> → <specific technique to improve>", "<improvement 2>"]
-  },
-  "overallPerformance": {
-    "score": <1-10>,
-    "feedback": "<detailed feedback>",
-    "strengths": ["<specific strength from transcript>", "<strength 2>"],
-    "improvements": ["<key issue from transcript> → <specific fix>", "<improvement 2>"]
-  },
-  "summary": "<2-3 sentence overall summary>"
+  "score": <1-10 overall score>,
+  "strengths": [
+    "<strength 1: quote good phrase/word from transcript + why it works>",
+    "<strength 2>",
+    "<strength 3>"
+  ],
+  "improvements": [
+    "<improvement 1: '[quote from transcript]' → [specific better alternative]>",
+    "<improvement 2>",
+    "<improvement 3>",
+    "<improvement 4>",
+    "<improvement 5>"
+  ],
+  "summary": "<1-2 sentence summary>"
 }
 
-CRITICAL RULES:
-1. ALL output text (feedback, strengths, improvements, summary) MUST be in ${config.name}
-2. For ALL improvements, you MUST:
-   - Quote the ACTUAL words/phrases from the transcript that need improvement
-   - Provide SPECIFIC alternative words/phrases to replace them
-   - Format as: "[quoted phrase from transcript] → [better alternatives]"
+RULES:
+1. Maximum 3 strengths - pick the BEST ones
+2. 3-7 improvements - focus on the MOST CRUCIAL issues
+3. ALL improvements MUST quote actual text from transcript and suggest specific fixes
+4. Be concise and actionable
 
-Examples of GOOD improvements (format varies by language):
-- Chinese: "频繁使用'然后' → 可替换为'接着'、'随后'、'此外'"
-- English: "Overused 'and' as connector → Try: 'furthermore', 'moreover', 'on the other hand'"
-- Spanish: "Uso repetido de 'entonces' → Alternativas: 'por lo tanto', 'en consecuencia', 'así que'"
+GOOD improvement examples:
+- Chinese: "'然后'使用过多 → 改用'接着'、'随后'"
+- English: "'like' used 8 times → Replace with 'such as', 'for example'"
+- Japanese: "'えーと'が多い → 間を置くか、言い換えを準備する"
 
-Examples of BAD improvements (too generic, DO NOT do this):
-- "Improve vocabulary diversity" (no specific examples from transcript)
-- "Use better transitions" (doesn't quote what was actually said)
-- Generic advice not tied to the actual speech content
-
-Evaluation criteria:
-- Delivery & Language: fluency, vocabulary variety, grammar, filler words, pace
-- Structure & Logic: organization, transitions, coherence, logical flow
-- Content Quality: relevance, depth, accuracy, supporting examples
-- Engagement & Presence: expressiveness, confidence, rhetorical devices
-- Overall Performance: holistic assessment considering all aspects`;
+BAD (too generic - DO NOT):
+- "Improve vocabulary" (no specific quote)
+- "Better transitions" (no concrete suggestion)`;
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -496,10 +586,16 @@ async function handleTranscribeRequest(request: Request, env: Env): Promise<Resp
 
     // Get filename from the uploaded file, default to media.webm
     const filename = mediaFile.name || 'media.webm';
-    console.log(`Transcribing media: ${mediaFile.size} bytes, filename: ${filename}, topic: ${topic}, lang: ${language}`);
+    const fileType = mediaFile.type || 'unknown';
+    console.log(`[Transcribe] Received file: ${filename}, type: ${fileType}, size: ${mediaFile.size} bytes`);
+    console.log(`[Transcribe] Topic: ${topic}, Language: ${language}`);
 
-    // Step 1: Transcribe with Whisper (supports audio and video formats)
-    const whisperResponse = await transcribeMedia(mediaFile, filename, env.OPENAI_API_KEY);
+    // Step 1: Transcribe with RunPod Whisper API (no file size limit)
+    const whisperResponse = await transcribeMedia(mediaFile, filename, env.RUNPOD_API_URL, env.RUNPOD_API_KEY);
+    
+    console.log(`[RunPod] Response - duration: ${whisperResponse.duration}s, language: ${whisperResponse.language}`);
+    console.log(`[RunPod] Full text (first 200 chars): ${whisperResponse.text.substring(0, 200)}`);
+    console.log(`[RunPod] Segments count: ${whisperResponse.segments?.length || 0}`);
     
     const segments: TranscriptSegment[] = whisperResponse.segments.map(s => ({
       id: s.id,
@@ -510,24 +606,29 @@ async function handleTranscribeRequest(request: Request, env: Env): Promise<Resp
 
     // Step 2: Group into paragraphs
     const paragraphs = groupIntoParagraphs(segments);
+    
+    const fullText = whisperResponse.text.trim();
 
-    // Step 3: Calculate metrics
-    const metrics = calculateMetrics(segments, whisperResponse.duration);
+    // Step 3: Calculate metrics (pass fullText for proper word counting)
+    const metrics = calculateMetrics(segments, whisperResponse.duration, fullText);
 
     const transcript: Transcript = {
       segments,
       paragraphs,
-      fullText: whisperResponse.text.trim(),
+      fullText,
       duration: whisperResponse.duration,
       language: whisperResponse.language,
     };
 
-    // Step 4: Analyze speech
+    // Step 4: Analyze speech with ChatGPT
     const analysisResult = await analyzeSpeech(transcript, topic, language, env.OPENAI_API_KEY);
     
-    // Merge metrics into analysis
+    // Combine ChatGPT analysis with calculated metrics
     const analysis: SpeechAnalysis = {
-      ...analysisResult,
+      score: analysisResult.score,
+      strengths: analysisResult.strengths,
+      improvements: analysisResult.improvements,
+      summary: analysisResult.summary,
       ...metrics,
     };
 

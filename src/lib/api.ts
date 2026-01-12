@@ -91,6 +91,14 @@ class LocalApi {
       else if (mimeType.includes('mp3') || mimeType.includes('mpeg')) extension = 'mp3';
       
       const filename = mimeType.startsWith('video/') ? `video.${extension}` : `audio.${extension}`;
+      
+      console.log(`[API] Sending to transcribe:`);
+      console.log(`  - Blob size: ${(mediaBlob.size / 1024 / 1024).toFixed(2)}MB`);
+      console.log(`  - Blob type: ${mediaBlob.type || '(empty)'}`);
+      console.log(`  - Using filename: ${filename}`);
+      console.log(`  - Topic: ${topic || '(none)'}`);
+      console.log(`  - Language: ${language}`);
+      
       formData.append('audio', mediaBlob, filename);
       if (topic) formData.append('topic', topic);
       formData.append('language', language);

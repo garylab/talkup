@@ -117,32 +117,34 @@ async function getBlobOPFS(id: string): Promise<Blob | null> {
     const root = await navigator.storage.getDirectory();
     
     // Get metadata for MIME type
-    let type = 'application/octet-stream';
+    let storedType = '';
     try {
       const metaHandle = await root.getFileHandle(`${id}.meta`);
       const metaFile = await metaHandle.getFile();
       const metaText = await metaFile.text();
       const meta = JSON.parse(metaText);
-      type = meta.type || type;
+      storedType = meta.type || '';
     } catch {
-      // No metadata file, continue with default type
+      // No metadata file, continue without stored type
     }
     
-    // Get file - File extends Blob, return it directly for better memory efficiency
+    // Get file - File extends Blob
     const fileHandle = await root.getFileHandle(id);
     const file = await fileHandle.getFile();
     
-    console.log(`[OPFS] Retrieved: ${id}, size: ${file.size}, type: ${type}`);
+    // Determine the best type to use
+    // Priority: stored metadata type > file.type > default
+    const finalType = storedType || file.type || 'application/octet-stream';
+    
+    console.log(`[OPFS] Retrieved: ${id}, size: ${file.size}, file.type: ${file.type || '(empty)'}, stored: ${storedType || '(none)'}, using: ${finalType}`);
     
     // If the file already has the correct type, return it directly
-    // File is a subclass of Blob, so this works
-    if (file.type === type || file.type) {
+    if (file.type === finalType) {
       return file;
     }
     
-    // Only create a new Blob if we need to set the type
-    // Use slice() instead of arrayBuffer() to avoid loading entire file into memory
-    return file.slice(0, file.size, type);
+    // Apply the correct type using slice()
+    return file.slice(0, file.size, finalType);
   } catch (error) {
     console.error(`[OPFS] Failed to get ${id}:`, error);
     return null;

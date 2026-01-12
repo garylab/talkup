@@ -108,6 +108,7 @@
     "detectedLanguage": "Idioma Detectado",
     "duration": "Duración",
     "fullText": "Transcripción Completa",
-    "timestampedSegments": "Segmentos con Marca de Tiempo"
+    "timestampedSegments": "Segmentos con Marca de Tiempo",
+    "reanalyze": "Re-analizar"
   }
 }

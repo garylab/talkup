@@ -108,6 +108,7 @@
     "detectedLanguage": "检测到的语言",
     "duration": "时长",
     "fullText": "完整文字稿",
-    "timestampedSegments": "带时间戳的段落"
+    "timestampedSegments": "带时间戳的段落",
+    "reanalyze": "重新分析"
   }
 }

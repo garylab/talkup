@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 import { getBlob } from '@/lib/storage';
 import { api } from '@/lib/api';
-import { extractAudioFromVideo, isVideoBlob, formatFileSize } from '@/lib/utils';
+import { isVideoBlob, formatFileSize, extractAudioFromVideo } from '@/lib/utils';
 import type { RecordingAnalysis } from '@/types';
 
 export function useAnalysis() {
@@ -42,17 +42,16 @@ export function useAnalysis() {
         language: '',
       },
       analysis: {
-        deliveryAndLanguage: { score: 0, feedback: '', strengths: [], improvements: [] },
-        structureAndLogic: { score: 0, feedback: '', strengths: [], improvements: [] },
-        contentQuality: { score: 0, feedback: '', strengths: [], improvements: [] },
-        engagementAndPresence: { score: 0, feedback: '', strengths: [], improvements: [] },
-        overallPerformance: { score: 0, feedback: '', strengths: [], improvements: [] },
+        score: 0,
+        strengths: [],
+        improvements: [],
+        summary: '',
         wordsPerMinute: 0,
         pauseRatio: 0,
         totalWords: 0,
         totalPauses: 0,
         averagePauseDuration: 0,
-        summary: '',
+        durationSeconds: 0,
       },
       createdAt: new Date().toISOString(),
       status: 'pending',
@@ -69,11 +68,16 @@ export function useAnalysis() {
         throw new Error('Recording not found');
       }
 
+      // For large video files (>50MB), extract audio to reduce upload size
+      // This speeds up the upload and base64 conversion
+      const EXTRACT_THRESHOLD = 50 * 1024 * 1024; // 50MB
+      const MIN_VALID_AUDIO_SIZE = 100 * 1024; // 100KB minimum for valid extracted audio
+      
       let mediaBlob = blob;
       
-      // If it's a video, extract audio first to reduce upload size
-      if (isVideoBlob(blob)) {
-        console.log(`[Analysis] Video detected: ${formatFileSize(blob.size)}`);
+      // For large video files, extract audio to reduce upload size
+      if (isVideoBlob(blob) && blob.size > EXTRACT_THRESHOLD) {
+        console.log(`[Analysis] Large video detected: ${formatFileSize(blob.size)}, extracting audio for faster upload...`);
         
         // Update status to extracting
         const extractingAnalysis = { ...initialAnalysis, status: 'extracting' as const };
@@ -82,13 +86,24 @@ export function useAnalysis() {
         onProgress?.('extracting');
         
         try {
-          mediaBlob = await extractAudioFromVideo(blob);
-          console.log(`[Analysis] Audio extracted: ${formatFileSize(mediaBlob.size)} (${Math.round((1 - mediaBlob.size / blob.size) * 100)}% smaller)`);
+          const extractedAudio = await extractAudioFromVideo(blob);
+          
+          // Validate extracted audio
+          if (extractedAudio.size < MIN_VALID_AUDIO_SIZE) {
+            console.warn(`[Analysis] Extracted audio too small (${formatFileSize(extractedAudio.size)}), using original video`);
+            // Don't fail, just use original video
+          } else {
+            console.log(`[Analysis] Audio extracted successfully: ${formatFileSize(extractedAudio.size)} (${Math.round((1 - extractedAudio.size / blob.size) * 100)}% smaller)`);
+            mediaBlob = extractedAudio;
+          }
         } catch (extractError) {
           console.warn('[Analysis] Audio extraction failed, using original video:', extractError);
-          // Fall back to original video if extraction fails
-          mediaBlob = blob;
+          // Don't fail, just use original video
         }
+      } else if (isVideoBlob(blob)) {
+        console.log(`[Analysis] Video detected: ${formatFileSize(blob.size)}, sending directly`);
+      } else {
+        console.log(`[Analysis] Audio detected: ${formatFileSize(blob.size)}`);
       }
 
       // Update status to transcribing

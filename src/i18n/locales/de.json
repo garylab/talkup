@@ -108,6 +108,7 @@
     "detectedLanguage": "Erkannte Sprache",
     "duration": "Dauer",
     "fullText": "Vollständiges Transkript",
-    "timestampedSegments": "Zeitgestempelte Segmente"
+    "timestampedSegments": "Zeitgestempelte Segmente",
+    "reanalyze": "Neu analysieren"
   }
 }

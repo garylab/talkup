@@ -463,16 +463,16 @@ export function RecordingStudio({
                         ))}
                       </div>
                     )}
-                  </div>
-                )}
-                
-                {/* Duration */}
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-black/60 backdrop-blur rounded-full">
-                  <div className={cn(
-                    'w-2 h-2 rounded-full',
-                    isRecording ? 'bg-red-500 animate-pulse' : 'bg-yellow-500'
-                  )} />
-                  <span className="font-mono text-xs tabular-nums">{formatDuration(duration)}</span>
+                </div>
+              )}
+              
+              {/* Duration */}
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-black/60 backdrop-blur rounded-full">
+                <div className={cn(
+                  'w-2 h-2 rounded-full',
+                  isRecording ? 'bg-red-500 animate-pulse' : 'bg-yellow-500'
+                )} />
+                <span className="font-mono text-xs tabular-nums">{formatDuration(duration)}</span>
                 </div>
               </div>
             </div>

@@ -108,6 +108,7 @@
     "detectedLanguage": "検出された言語",
     "duration": "長さ",
     "fullText": "全文",
-    "timestampedSegments": "タイムスタンプ付きセグメント"
+    "timestampedSegments": "タイムスタンプ付きセグメント",
+    "reanalyze": "再分析"
   }
 }
