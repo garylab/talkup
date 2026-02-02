@@ -118,11 +118,6 @@ interface NewsItem {
 const LANGUAGE_CONFIG: Record<string, { hl: string; gl: string; name: string }> = {
   en: { hl: 'en', gl: 'us', name: 'English' },
   zh: { hl: 'zh-CN', gl: 'cn', name: 'Chinese' },
-  es: { hl: 'es', gl: 'es', name: 'Spanish' },
-  fr: { hl: 'fr', gl: 'fr', name: 'French' },
-  de: { hl: 'de', gl: 'de', name: 'German' },
-  ja: { hl: 'ja', gl: 'jp', name: 'Japanese' },
-  pt: { hl: 'pt-BR', gl: 'br', name: 'Portuguese' },
 };
 
 // Generate cache key - use topic and language directly
