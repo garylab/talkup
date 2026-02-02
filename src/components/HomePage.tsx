@@ -5,6 +5,7 @@ import { RefreshCw } from 'lucide-react';
 import { RecordingStudio } from '@/components/RecordingStudio';
 import { RecordingsView } from '@/components/RecordingsView';
 import { SettingsView } from '@/components/SettingsView';
+import { DailyPractice } from '@/components/DailyPractice';
 import { BottomNavbar, TabId } from '@/components/BottomNavbar';
 import { useRecorder } from '@/hooks/useRecorder';
 import { useLocalRecordings, useLocalStorage } from '@/hooks/useLocalStorage';
@@ -27,8 +28,8 @@ export function HomePage({ locale }: HomePageProps) {
   const t = (key: string) => translate(effectiveLocale, key);
   const topics = getTopics(effectiveLocale);
 
-  // Tab navigation
-  const [activeTab, setActiveTab] = useState<TabId>('home');
+  // Tab navigation - default to practice (daily todo) tab
+  const [activeTab, setActiveTab] = useState<TabId>('practice');
 
   // Topic state - persisted to localStorage
   const [topic, setTopic, isTopicHydrated] = useLocalStorage<string | null>('talkup-topic', null);
@@ -126,6 +127,13 @@ export function HomePage({ locale }: HomePageProps) {
             topics={topics}
             locale={effectiveLocale}
           />
+        )}
+
+        {/* Practice Tab - Daily Todo */}
+        {activeTab === 'practice' && (
+          <div className="h-full overflow-y-auto animate-fade-in">
+            <DailyPractice t={t} />
+          </div>
         )}
 
         {/* Recordings Tab */}

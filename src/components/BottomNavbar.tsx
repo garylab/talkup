@@ -1,9 +1,9 @@
 'use client';
 
-import { Home, ListMusic, Settings } from 'lucide-react';
+import { Home, ClipboardCheck, ListMusic, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type TabId = 'home' | 'recordings' | 'settings';
+export type TabId = 'home' | 'practice' | 'recordings' | 'settings';
 
 interface BottomNavbarProps {
   activeTab: TabId;
@@ -15,6 +15,7 @@ interface BottomNavbarProps {
 export function BottomNavbar({ activeTab, onTabChange, recordingsCount = 0, t }: BottomNavbarProps) {
   const tabs = [
     { id: 'home' as TabId, icon: Home, label: t('nav.home') },
+    { id: 'practice' as TabId, icon: ClipboardCheck, label: t('nav.practice') },
     { id: 'recordings' as TabId, icon: ListMusic, label: t('nav.recordings'), badge: recordingsCount },
     { id: 'settings' as TabId, icon: Settings, label: t('nav.settings') },
   ];
