@@ -33,7 +33,7 @@ const practiceItems: PracticeItem[] = [
     durationMinutes: 30,
     goal: '不停、不卡、不自责',
     principles: ['不审稿', '不回头', '不评价好不好'],
-    methods: ['选 1 个话题', '用 3 个模版各说一遍', '每个模版 10 分钟，一个模版说到顺，再练下一个'],
+    methods: ['选 1 个话题', '用 3 个模版各说一遍', '每个模版 10 分钟，一个模版说顺后，再练下一个'],
     templates: [
       { name: '模版一', content: '观点 → 原因 → 例子' },
       { name: '模版二', content: '事情 → 感受 → 判断' },
